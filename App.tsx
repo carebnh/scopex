@@ -28,7 +28,7 @@ function App() {
     <div className="min-h-screen flex flex-col scroll-smooth">
       <Header onEnquire={openEnquiry} />
       <EnquiryModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-      <HealthCampPromo />
+      <HealthCampPromo onAskAdvisor={handleAdvisorQuery} />
       
       <main className="flex-grow">
         <Hero onEnquire={openEnquiry} />

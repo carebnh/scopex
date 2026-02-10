@@ -2,7 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import BookCampModal from './BookCampModal';
 
-const HealthCampPromo: React.FC = () => {
+interface HealthCampPromoProps {
+  onAskAdvisor?: (query: string) => void;
+}
+
+const HealthCampPromo: React.FC<HealthCampPromoProps> = ({ onAskAdvisor }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
@@ -27,6 +31,14 @@ const HealthCampPromo: React.FC = () => {
     setIsVisible(false);
     setIsBookingModalOpen(true);
     sessionStorage.setItem('sx_health_camp_promo', 'true');
+  };
+
+  const handleConsultAI = () => {
+    setIsVisible(false);
+    sessionStorage.setItem('sx_health_camp_promo', 'true');
+    if (onAskAdvisor) {
+      onAskAdvisor("I'm interested in the Corporate Health Fest. How should I plan the logistics for a large-scale employee health camp at my facility?");
+    }
   };
 
   if (!isVisible && !isBookingModalOpen) return null;
@@ -69,7 +81,7 @@ const HealthCampPromo: React.FC = () => {
 
             {/* Content */}
             <div className="p-8 pt-4 text-center">
-              <div className="space-y-4 mb-8">
+              <div className="space-y-4 mb-6">
                 <div className="flex items-center justify-center space-x-4">
                    <div className="flex flex-col items-center">
                      <span className="text-xl font-black text-scopex-blue">50+</span>
@@ -91,6 +103,17 @@ const HealthCampPromo: React.FC = () => {
                 </p>
               </div>
 
+              {/* AI Strategist Trigger */}
+              <button 
+                onClick={handleConsultAI}
+                className="w-full mb-4 py-3 bg-gray-50 border border-scopex-blue/10 text-scopex-blue rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-scopex-blue hover:text-white transition-all flex items-center justify-center space-x-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Consult AI Advisor First</span>
+              </button>
+
               <div className="grid grid-cols-2 gap-4">
                 <button 
                   onClick={handleClose}
@@ -102,7 +125,7 @@ const HealthCampPromo: React.FC = () => {
                   onClick={handleBookNow}
                   className="bg-scopex-blue text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:shadow-blue-900/30 active:scale-95 transition-all"
                 >
-                  Book Slot
+                  Book Slot Now
                 </button>
               </div>
             </div>

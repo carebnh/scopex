@@ -1,20 +1,37 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
 
-# Run and deploy your AI Studio app
+# Scope X Diagnostics - Smart Lab Management Portal
 
-This contains everything you need to run your app locally.
+Scope X Diagnostics is a high-performance healthcare portal designed for hospital laboratory outsourcing and strategic diagnostic management.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1Sqr5XdtWnr2Ysr5x1HamtsOiKznjFlQv
+## 🚀 Key Features
 
-## Run Locally
+- **AI Strategic Advisor**: Powered by Gemini API, providing real-time laboratory planning and NABL compliance advice.
+- **Service Models**: Interactive sections for "Complete Outsource" and "Hybrid Partnership" models.
+- **Corporate Health Camps**: Specialized module for B2B wellness bookings with integrated registry.
+- **NABL Readiness**: Strategic guidance on ISO 15189 accreditation.
+- **Responsive Design**: Fully optimized for mobile and desktop using Tailwind CSS.
 
-**Prerequisites:**  Node.js
+## 🛠️ Technology Stack
 
+- **Frontend**: React (ES6 Modules)
+- **Styling**: Tailwind CSS
+- **AI Engine**: @google/genai (Gemini 2.0 Flash)
+- **Icons**: Heroicons & Custom SVG
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 📦 Setup & Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+   ```
+
+2. This project uses ES modules via CDN. To run locally, you can use a simple dev server:
+   ```bash
+   npx serve .
+   ```
+
+3. Ensure you have your `API_KEY` configured in your environment for the AI Advisor to function correctly.
+
+## 📄 License
+
+This project is proprietary. Contact `scopexdiagnostic@gmail.com` for partnership inquiries.

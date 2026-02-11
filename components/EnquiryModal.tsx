@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { submitHospitalEnquiry } from '../services/submissionService';
+import { submitHospitalEnquiry } from '../services/submissionService.ts';
 
 interface EnquiryModalProps {
   isOpen: boolean;
@@ -11,7 +11,6 @@ const EnquiryModal: React.FC<EnquiryModalProps> = ({ isOpen, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
-  // Form State
   const [formData, setFormData] = useState({
     hospitalName: '',
     contactName: '',
@@ -50,7 +49,6 @@ const EnquiryModal: React.FC<EnquiryModalProps> = ({ isOpen, onClose }) => {
       setTimeout(() => {
         setIsSuccess(false);
         onClose();
-        // Reset form
         setFormData({
           hospitalName: '',
           contactName: '',
@@ -72,7 +70,6 @@ const EnquiryModal: React.FC<EnquiryModalProps> = ({ isOpen, onClose }) => {
         <button 
           onClick={onClose}
           className="absolute top-6 right-6 text-gray-400 hover:text-scopex-blue p-3 bg-gray-50 sm:bg-transparent rounded-full z-20"
-          aria-label="Close Modal"
         >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
@@ -99,54 +96,23 @@ const EnquiryModal: React.FC<EnquiryModalProps> = ({ isOpen, onClose }) => {
             <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Hospital Name</label>
-                <input 
-                  required 
-                  type="text" 
-                  name="hospitalName"
-                  value={formData.hospitalName}
-                  onChange={handleChange}
-                  className="w-full px-5 py-3.5 md:py-4 bg-gray-50 border-none rounded-2xl focus:ring-4 focus:ring-scopex-blue/10 outline-none transition-all font-medium text-sm" 
-                  placeholder="e.g. Indore City Hospital" 
-                />
+                <input required type="text" name="hospitalName" value={formData.hospitalName} onChange={handleChange} className="w-full px-5 py-3.5 md:py-4 bg-gray-50 border-none rounded-2xl focus:ring-4 focus:ring-scopex-blue/10 outline-none transition-all font-medium text-sm" placeholder="e.g. Indore City Hospital" />
               </div>
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Contact Name</label>
-                <input 
-                  required 
-                  type="text" 
-                  name="contactName"
-                  value={formData.contactName}
-                  onChange={handleChange}
-                  className="w-full px-5 py-3.5 md:py-4 bg-gray-50 border-none rounded-2xl focus:ring-4 focus:ring-scopex-blue/10 outline-none transition-all font-medium text-sm" 
-                  placeholder="Your Full Name" 
-                />
+                <input required type="text" name="contactName" value={formData.contactName} onChange={handleChange} className="w-full px-5 py-3.5 md:py-4 bg-gray-50 border-none rounded-2xl focus:ring-4 focus:ring-scopex-blue/10 outline-none transition-all font-medium text-sm" placeholder="Your Full Name" />
               </div>
-
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Mobile Number</label>
                 <div className="relative">
                   <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">+91</span>
-                  <input 
-                    required 
-                    type="tel" 
-                    name="mobile"
-                    value={formData.mobile}
-                    onChange={handleChange}
-                    className="w-full pl-14 pr-5 py-3.5 md:py-4 bg-gray-50 border-none rounded-2xl focus:ring-4 focus:ring-scopex-blue/10 outline-none transition-all font-medium text-sm" 
-                    placeholder="88899 47011" 
-                  />
+                  <input required type="tel" name="mobile" value={formData.mobile} onChange={handleChange} className="w-full pl-14 pr-5 py-3.5 md:py-4 bg-gray-50 border-none rounded-2xl focus:ring-4 focus:ring-scopex-blue/10 outline-none transition-all font-medium text-sm" placeholder="88899 47011" />
                 </div>
               </div>
-
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Primary Interest</label>
                 <div className="relative">
-                  <select 
-                    name="interest"
-                    value={formData.interest}
-                    onChange={handleChange}
-                    className="w-full px-5 py-3.5 md:py-4 bg-gray-50 border-none rounded-2xl focus:ring-4 focus:ring-scopex-blue/10 outline-none appearance-none cursor-pointer font-medium text-sm"
-                  >
+                  <select name="interest" value={formData.interest} onChange={handleChange} className="w-full px-5 py-3.5 md:py-4 bg-gray-50 border-none rounded-2xl focus:ring-4 focus:ring-scopex-blue/10 outline-none appearance-none cursor-pointer font-medium text-sm">
                     <option>Full Lab Outsourcing</option>
                     <option>Hybrid Partnership</option>
                     <option>Technical Consultancy</option>
@@ -158,20 +124,8 @@ const EnquiryModal: React.FC<EnquiryModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 </div>
               </div>
-
-              <button 
-                disabled={isSubmitting}
-                className="w-full bg-scopex-blue text-white py-4.5 rounded-2xl font-black text-lg active:scale-[0.98] transition-all shadow-xl mt-6 disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                  </span>
-                ) : 'Submit Enquiry'}
+              <button disabled={isSubmitting} className="w-full bg-scopex-blue text-white py-4.5 rounded-2xl font-black text-lg active:scale-[0.98] transition-all shadow-xl mt-6 disabled:opacity-50">
+                {isSubmitting ? 'Processing...' : 'Submit Enquiry'}
               </button>
             </form>
           </div>

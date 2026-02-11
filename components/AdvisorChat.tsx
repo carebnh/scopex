@@ -1,5 +1,6 @@
+
 import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { getLabAdvice } from '../services/geminiService';
+import { getLabAdvice } from '../services/geminiService.ts';
 
 export interface AdvisorChatHandle {
   triggerQuery: (query: string) => void;
@@ -28,9 +29,8 @@ const AdvisorChat = forwardRef<AdvisorChatHandle>((_, ref) => {
 
   useEffect(() => {
     if (scrollRef.current) {
-      const scrollHeight = scrollRef.current.scrollHeight;
       scrollRef.current.scrollTo({
-        top: scrollHeight,
+        top: scrollRef.current.scrollHeight,
         behavior: 'smooth'
       });
     }
@@ -64,10 +64,14 @@ const AdvisorChat = forwardRef<AdvisorChatHandle>((_, ref) => {
     setMessages(newMessages);
     setLoading(true);
 
-    const history = newMessages.map(m => ({
-      role: m.role,
-      parts: [{ text: m.text }]
-    }));
+    // Gemini API history must alternate user/model and usually start with user.
+    // We skip the first 'model' welcome message if it's the start of the conversation history.
+    const history = newMessages
+      .filter((m, idx) => !(idx === 0 && m.role === 'model'))
+      .map(m => ({
+        role: m.role,
+        parts: [{ text: m.text }]
+      }));
 
     const rawResponse = await getLabAdvice(history);
     const { cleanedText, suggestionList } = parseSuggestions(rawResponse);
@@ -257,37 +261,9 @@ const AdvisorChat = forwardRef<AdvisorChatHandle>((_, ref) => {
                 </svg>
               </button>
             </div>
-            
-            <div className="mt-5 flex items-center justify-between px-3">
-               <div className="flex items-center space-x-2 opacity-40">
-                  <div className="w-1.5 h-1.5 bg-scopex-green rounded-full"></div>
-                  <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-600">Secure Strategy Line</span>
-               </div>
-               <div className="flex items-center space-x-4 opacity-40">
-                  <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-600">AI Engine</span>
-                  <div className="h-3 w-px bg-gray-200"></div>
-                  <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-600">v4.0.2</span>
-               </div>
-            </div>
           </div>
         </div>
       </div>
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 5px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f8fafc;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #e2e8f0;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #cbd5e1;
-        }
-      `}</style>
     </>
   );
 });

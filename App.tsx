@@ -1,16 +1,16 @@
 
 import React, { useState, useRef } from 'react';
-import Header from './components/Header';
-import Hero from './components/Hero';
-import ServiceModels from './components/ServiceModels';
-import Expertise from './components/Expertise';
-import CorporateCheckups from './components/CorporateCheckups';
-import AdvisorChat, { AdvisorChatHandle } from './components/AdvisorChat';
-import Testimonials from './components/Testimonials';
-import Footer from './components/Footer';
-import ScrollToTop from './components/ScrollToTop';
-import EnquiryModal from './components/EnquiryModal';
-import HealthCampPromo from './components/HealthCampPromo';
+import Header from './components/Header.tsx';
+import Hero from './components/Hero.tsx';
+import ServiceModels from './components/ServiceModels.tsx';
+import Expertise from './components/Expertise.tsx';
+import CorporateCheckups from './components/CorporateCheckups.tsx';
+import AdvisorChat, { AdvisorChatHandle } from './components/AdvisorChat.tsx';
+import Testimonials from './components/Testimonials.tsx';
+import Footer from './components/Footer.tsx';
+import ScrollToTop from './components/ScrollToTop.tsx';
+import EnquiryModal from './components/EnquiryModal.tsx';
+import HealthCampPromo from './components/HealthCampPromo.tsx';
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,10 +25,7 @@ function App() {
   };
 
   const handleDownloadBrochure = () => {
-    // In a production environment, this would link to a real PDF.
-    // For now, we simulate the action or provide a clear feedback.
     alert("Downloading Scope X Strategic Laboratory Brochure...");
-    // window.open('/path-to-brochure.pdf', '_blank');
   };
 
   return (
@@ -40,7 +37,6 @@ function App() {
       <main className="flex-grow">
         <Hero onEnquire={openEnquiry} />
         
-        {/* Solutions Intro */}
         <section id="solutions" className="py-24 bg-white relative">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto text-center">
@@ -70,11 +66,11 @@ function App() {
         </section>
 
         <ServiceModels onEnquire={openEnquiry} />
+        {/* Fix: Corrected misspelled openEnquire to openEnquiry */}
         <Expertise onEnquire={openEnquiry} />
         <CorporateCheckups onAskAdvisor={handleAdvisorQuery} />
         <Testimonials />
 
-        {/* Final CTA */}
         <section className="py-24 gradient-blue relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 pointer-events-none">
             <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-white rounded-full blur-3xl"></div>
@@ -112,7 +108,6 @@ function App() {
           </div>
         </section>
 
-        {/* AI Advisor Section Anchor */}
         <section id="advisor" className="h-0"></section>
       </main>
 

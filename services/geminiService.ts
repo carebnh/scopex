@@ -19,14 +19,10 @@ DYNAMIC SUGGESTIONS RULES (CRITICAL):
 At the end of EVERY response, you MUST provide 3 follow-up suggestions that directly relate to the current topic. 
 Format: [SUGGESTIONS: Specific Question 1 | Specific Question 2 | Specific Question 3]
 
-Example scenarios:
-- If discussing NABL: [SUGGESTIONS: Review common audit gaps? | Timeline for ISO 15189? | Cost of accreditation support?]
-- If discussing TAT: [SUGGESTIONS: Logistics tracking options? | LIS integration for TAT? | Pre-analytical efficiency tools?]
-- If discussing Outsourcing: [SUGGESTIONS: Institutional ROI analysis? | Manpower management structure? | Implementation roadmap?]
-
 Contact for human consultation: 8889947011 | scopexdiagnostic@gmail.com.
 `;
 
+// Use process.env.API_KEY directly as per SDK guidelines
 export const getLabAdvice = async (history: { role: 'user' | 'model', parts: { text: string }[] }[]) => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });

@@ -41,17 +41,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
       setData(prev => prev.filter(item => item.rowId !== rowId));
       setSelectedLead(null);
     } else {
-      alert("Failed to delete lead. Please check your connection.");
+      alert("Failed to delete lead. If using mock data, this is normal. Check console for details.");
     }
     setIsDeleting(false);
   };
 
   const filteredData = data.filter(item => {
-    const isCorrectType = activeTab === 'hospital' ? item.type === 'hospital' || item.hospitalName : item.type === 'camp' || item.organization;
-    const matchesSearch = (item.hospitalName || item.organization || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (item.contactName || item.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (item.mobile || item.phone || '').includes(searchQuery);
-    return isCorrectType && matchesSearch;
+    // Check type based on existing properties or explicit type flag
+    const isHospital = item.type === 'hospital' || item.hospitalName;
+    const isCamp = item.type === 'camp' || item.organization;
+    
+    const isCorrectTab = activeTab === 'hospital' ? isHospital : isCamp;
+    
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = 
+      (item.hospitalName || '').toLowerCase().includes(searchLower) ||
+      (item.organization || '').toLowerCase().includes(searchLower) ||
+      (item.contactName || '').toLowerCase().includes(searchLower) ||
+      (item.fullName || '').toLowerCase().includes(searchLower) ||
+      (item.mobile || item.phone || '').includes(searchQuery);
+
+    return isCorrectTab && matchesSearch;
   });
 
   const exportToCSV = () => {
@@ -82,7 +92,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-[300] bg-slate-900/40 backdrop-blur-xl flex items-center justify-center p-0 md:p-6 animate-in fade-in duration-300">
       <div className="bg-white w-full h-full md:max-w-7xl md:h-[90vh] md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden relative border border-white/20">
         
-        {/* Header */}
+        {/* Dashboard Header */}
         <div className="px-8 py-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white shrink-0">
           <div className="flex items-center space-x-4">
             <div className="w-14 h-14 bg-scopex-blue rounded-2xl flex items-center justify-center shadow-lg">
@@ -91,10 +101,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
               </svg>
             </div>
             <div>
-              <h2 className="text-2xl font-black text-scopex-blue tracking-tighter uppercase">Admin Intelligence Hub</h2>
-              <div className="flex items-center space-x-3 mt-1">
+              <h2 className="text-2xl font-black text-scopex-blue tracking-tighter uppercase leading-none mb-1">Intelligence Hub</h2>
+              <div className="flex items-center space-x-3">
                  <span className="flex h-2 w-2 rounded-full bg-scopex-green"></span>
-                 <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase">Secured Registry Database</span>
+                 <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase">Secured Registry Live</span>
               </div>
             </div>
           </div>
@@ -120,12 +130,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* Filters & Stats */}
+        {/* Stats Summary */}
         <div className="p-8 bg-gray-50/50 border-b border-gray-100 space-y-8 shrink-0">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Leads</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Logs</p>
                 <p className="text-3xl font-black text-scopex-blue">{data.length}</p>
               </div>
               <div className="w-12 h-12 bg-blue-50 text-scopex-blue rounded-xl flex items-center justify-center">
@@ -135,7 +145,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
             <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Hospital Partners</p>
-                <p className="text-3xl font-black text-scopex-green">{data.filter(i => i.type === 'hospital').length}</p>
+                <p className="text-3xl font-black text-scopex-green">{data.filter(i => i.type === 'hospital' || i.hospitalName).length}</p>
               </div>
               <div className="w-12 h-12 bg-green-50 text-scopex-green rounded-xl flex items-center justify-center">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
@@ -143,8 +153,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
             </div>
             <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Corporate Camps</p>
-                <p className="text-3xl font-black text-orange-500">{data.filter(i => i.type === 'camp').length}</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Camp Bookings</p>
+                <p className="text-3xl font-black text-orange-500">{data.filter(i => i.type === 'camp' || i.organization).length}</p>
               </div>
               <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -172,7 +182,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
               <svg className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               <input 
                 type="text" 
-                placeholder="Search by name, organization or phone..."
+                placeholder="Search by name, institution or mobile..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-14 pr-6 py-4 bg-white border border-gray-100 rounded-2xl focus:ring-4 focus:ring-scopex-blue/5 outline-none transition-all font-bold text-sm shadow-sm placeholder:text-gray-300"
@@ -181,7 +191,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* Table Content */}
+        {/* Data Registry Table */}
         <div className="flex-1 overflow-auto custom-scrollbar p-0 bg-white">
           {loading ? (
             <div className="h-full flex items-center justify-center flex-col space-y-4">
@@ -195,8 +205,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Timestamp</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">{activeTab === 'hospital' ? 'Hospital' : 'Organization'}</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Primary Contact</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Communication</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">{activeTab === 'hospital' ? 'Interest' : 'Event Date'}</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Phone</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">{activeTab === 'hospital' ? 'Interest' : 'Date'}</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Action</th>
                 </tr>
               </thead>
@@ -210,26 +220,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                     <td className="px-8 py-6 text-xs font-bold text-gray-400">{item.timestamp}</td>
                     <td className="px-8 py-6">
                       <p className="text-sm font-black text-scopex-blue group-hover:underline underline-offset-4 decoration-2">{item.hospitalName || item.organization}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-0.5">{activeTab === 'hospital' ? 'Healthcare Facility' : 'Corporate Hub'}</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-0.5">{item.type === 'camp' || item.organization ? 'Corporate' : 'Healthcare'}</p>
                     </td>
                     <td className="px-8 py-6">
                       <p className="text-sm font-bold text-slate-800">{item.contactName || item.fullName}</p>
+                      {item.email && <p className="text-[10px] text-gray-400 truncate max-w-[150px]">{item.email}</p>}
                     </td>
+                    <td className="px-8 py-6 text-sm font-black text-slate-700">{item.mobile || item.phone}</td>
                     <td className="px-8 py-6">
-                      <div className="flex flex-col space-y-1">
-                        <span className="text-xs font-black text-slate-700">{item.mobile || item.phone}</span>
-                        {item.email && <span className="text-[10px] font-medium text-gray-400">{item.email}</span>}
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className="px-4 py-2 bg-gray-100 rounded-lg text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                      <span className="px-3 py-1 bg-gray-100 rounded-lg text-[10px] font-black text-gray-500 uppercase tracking-widest">
                         {item.interest || item.date}
                       </span>
                     </td>
-                    <td className="px-8 py-6">
+                    <td className="px-8 py-6" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center space-x-2">
-                        <button className="text-[10px] font-black text-scopex-green uppercase tracking-[0.2em] border border-scopex-green/20 px-4 py-2 rounded-lg group-hover:bg-scopex-green group-hover:text-white transition-all">
-                          View
+                        <button 
+                          onClick={() => setSelectedLead(item)}
+                          className="p-2.5 bg-scopex-blue/5 text-scopex-blue hover:bg-scopex-blue hover:text-white rounded-xl transition-all"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(item.rowId)}
+                          className="p-2.5 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         </button>
                       </div>
                     </td>
@@ -249,11 +264,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
           )}
         </div>
 
-        {/* Lead Detail Modal - Overlay inside Dashboard */}
+        {/* Enhanced Lead Detail Modal */}
         {selectedLead && (
           <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.4)] overflow-hidden animate-in zoom-in duration-300 border border-white/20">
-              {/* Modal Header */}
+            <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.4)] overflow-hidden animate-in zoom-in duration-300 border border-white/20 flex flex-col">
+              
+              {/* Detail Header */}
               <div className="bg-scopex-blue p-10 text-white relative">
                 <button 
                   onClick={() => setSelectedLead(null)}
@@ -263,48 +279,48 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                 </button>
                 <div className="flex items-center space-x-6">
                   <div className="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center text-3xl shadow-inner backdrop-blur-md border border-white/10">
-                    {selectedLead.type === 'hospital' ? '🏥' : '🏢'}
+                    {selectedLead.hospitalName ? '🏥' : '🏢'}
                   </div>
                   <div>
-                    <h3 className="text-3xl font-black tracking-tighter">{selectedLead.hospitalName || selectedLead.organization}</h3>
+                    <h3 className="text-3xl font-black tracking-tighter leading-tight">{selectedLead.hospitalName || selectedLead.organization}</h3>
                     <div className="flex items-center space-x-3 mt-1.5">
-                      <span className="px-3 py-1 bg-white/10 rounded-full text-[9px] font-black uppercase tracking-widest">Lead ID: #{selectedLead.rowId}</span>
+                      <span className="px-3 py-1 bg-white/10 rounded-full text-[9px] font-black uppercase tracking-widest">Entry ID: #{selectedLead.rowId}</span>
                       <span className="flex h-2 w-2 rounded-full bg-scopex-green"></span>
-                      <span className="text-[9px] font-black text-blue-100/60 uppercase tracking-widest">Active Verification</span>
+                      <span className="text-[9px] font-black text-blue-100/60 uppercase tracking-widest">Verified Log</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Modal Content */}
-              <div className="p-10 space-y-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                <div className="grid grid-cols-2 gap-8">
+              {/* Detail Content */}
+              <div className="p-10 space-y-8 overflow-y-auto max-h-[50vh] custom-scrollbar">
+                <div className="grid grid-cols-2 gap-x-8 gap-y-6">
                   <div className="space-y-1">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Primary Contact Person</p>
-                    <p className="text-lg font-black text-slate-800">{selectedLead.contactName || selectedLead.fullName}</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Representative Name</p>
+                    <p className="text-lg font-black text-slate-800 leading-tight">{selectedLead.contactName || selectedLead.fullName}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Logged Into System</p>
-                    <p className="text-lg font-bold text-slate-800">{selectedLead.timestamp}</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Submission Time</p>
+                    <p className="text-sm font-bold text-slate-500">{selectedLead.timestamp}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Direct Contact</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact Number</p>
                     <p className="text-lg font-black text-scopex-blue">{selectedLead.mobile || selectedLead.phone}</p>
                   </div>
                   {selectedLead.email && (
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Official Email</p>
-                      <p className="text-lg font-bold text-slate-800 truncate">{selectedLead.email}</p>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Business Email</p>
+                      <p className="text-sm font-bold text-slate-800 truncate">{selectedLead.email}</p>
                     </div>
                   )}
                   <div className="space-y-1">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{selectedLead.type === 'hospital' ? 'Selected Model' : 'Proposed Date'}</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{selectedLead.hospitalName ? 'Inquiry Type' : 'Event Date'}</p>
                     <p className="text-lg font-black text-scopex-green">{selectedLead.interest || selectedLead.date}</p>
                   </div>
                   {selectedLead.headcount && (
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Employee Count</p>
-                      <p className="text-lg font-bold text-slate-800">{selectedLead.headcount}</p>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Expected Headcount</p>
+                      <p className="text-lg font-black text-slate-800">{selectedLead.headcount}</p>
                     </div>
                   )}
                 </div>
@@ -313,33 +329,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                   <div className="space-y-3 p-8 bg-gray-50 rounded-[2rem] border border-gray-100 shadow-inner">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center">
                       <svg className="w-3 h-3 mr-2 text-scopex-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
-                      Comprehensive Requirements
+                      Specific Requirements
                     </p>
-                    <p className="text-sm font-semibold text-slate-600 leading-relaxed">"{selectedLead.requirements}"</p>
+                    <p className="text-sm font-semibold text-slate-600 leading-relaxed italic">"{selectedLead.requirements}"</p>
                   </div>
                 )}
               </div>
 
-              {/* Modal Actions */}
-              <div className="px-10 py-8 border-t border-gray-100 flex gap-4 bg-gray-50/30">
+              {/* Action Buttons */}
+              <div className="p-10 border-t border-gray-100 flex gap-4 bg-gray-50/50">
                 <button 
                   onClick={() => window.open(`tel:${selectedLead.mobile || selectedLead.phone}`)}
-                  className="flex-1 bg-scopex-blue text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-900/10 active:scale-95 transition-all flex items-center justify-center space-x-2"
+                  className="flex-1 bg-scopex-blue text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-900/10 active:scale-95 transition-all flex items-center justify-center space-x-2"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                  <span>Connect Now</span>
+                  <span>Call Lead</span>
                 </button>
                 <button 
                   onClick={() => handleDelete(selectedLead.rowId)}
                   disabled={isDeleting}
-                  className="px-8 bg-red-50 text-red-500 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-red-500 hover:text-white transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center space-x-2"
+                  className="px-8 bg-red-50 text-red-500 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center space-x-2"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                   <span>Delete</span>
                 </button>
                 <button 
                   onClick={() => setSelectedLead(null)}
-                  className="px-8 bg-gray-100 text-slate-400 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-gray-200 transition-all active:scale-95"
+                  className="px-8 bg-gray-100 text-slate-400 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95"
                 >
                   Dismiss
                 </button>
@@ -348,7 +364,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
           </div>
         )}
 
-        {/* Footer info */}
+        {/* Footer Sync Status */}
         <div className="px-8 py-5 border-t border-gray-100 flex items-center justify-between text-[10px] font-black text-gray-300 uppercase tracking-widest shrink-0 bg-white">
           <p>Scope X Diagnostics Administration v1.2</p>
           <div className="flex items-center space-x-6">

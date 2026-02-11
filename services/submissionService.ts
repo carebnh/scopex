@@ -22,8 +22,6 @@
  *
  *   // ACTION: DELETE DATA
  *   if (data.action === 'delete') {
- *     // In a production script, find by timestamp or unique ID. 
- *     // For simplicity in this demo, we use the row index provided by the fetch action.
  *     if (data.rowId) {
  *       sheet.deleteRow(data.rowId);
  *       return ContentService.createTextOutput("Deleted").setMimeType(ContentService.MimeType.TEXT);
@@ -43,28 +41,9 @@
  * ============================================================
  */
 
-export interface HospitalEnquiry {
-  hospitalName: string;
-  contactName: string;
-  mobile: string;
-  interest: string;
-  timestamp: string;
-}
-
-export interface CampBooking {
-  fullName: string;
-  organization: string;
-  phone: string;
-  email: string;
-  date: string;
-  headcount: string;
-  requirements: string;
-  timestamp: string;
-}
-
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-EXAMPLE-REPLACE-THIS/exec';
 
-export const submitHospitalEnquiry = async (data: HospitalEnquiry): Promise<boolean> => {
+export const submitHospitalEnquiry = async (data: any): Promise<boolean> => {
   try {
     await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
@@ -78,7 +57,7 @@ export const submitHospitalEnquiry = async (data: HospitalEnquiry): Promise<bool
   }
 };
 
-export const submitCampBooking = async (data: CampBooking): Promise<boolean> => {
+export const submitCampBooking = async (data: any): Promise<boolean> => {
   try {
     await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
@@ -93,11 +72,13 @@ export const submitCampBooking = async (data: CampBooking): Promise<boolean> => 
 };
 
 export const fetchAdminData = async (): Promise<any[]> => {
+  // Use mock data if URL is still placeholder
   if (APPS_SCRIPT_URL.includes('EXAMPLE')) {
     return [
       { rowId: 2, timestamp: '10/25/2024, 2:30 PM', hospitalName: 'Apex Heart Institute', contactName: 'Dr. Rahul Sharma', mobile: '9827012345', interest: 'Full Lab Outsourcing', type: 'hospital' },
-      { rowId: 3, timestamp: '10/26/2024, 11:15 AM', organization: 'Tech Mahindra SEZ', fullName: 'Amit Verma', phone: '8889912344', email: 'amit@techm.com', date: '2024-11-15', headcount: '200-500', requirements: 'Full wellness screening for 400 employees over 2 days.', type: 'camp' },
+      { rowId: 3, timestamp: '10/26/2024, 11:15 AM', organization: 'Tech Mahindra SEZ', fullName: 'Amit Verma', phone: '8889912344', email: 'amit@techm.com', date: '2024-11-15', headcount: '200-500', requirements: 'Full wellness screening for 400 employees over 2 days at the main campus.', type: 'camp' },
       { rowId: 4, timestamp: '10/27/2024, 4:45 PM', hospitalName: 'Indore City Hospital', contactName: 'Mrs. Sunita Iyer', mobile: '7771234455', interest: 'Hybrid Partnership', type: 'hospital' },
+      { rowId: 5, timestamp: '10/28/2024, 9:00 AM', organization: 'Global Infotech Park', fullName: 'Sandeep Rai', phone: '9123456789', email: 'sandeep@infotech.com', date: '2024-12-05', headcount: '2000+', requirements: 'Blood work and vitals check for night shift staff.', type: 'camp' }
     ];
   }
 

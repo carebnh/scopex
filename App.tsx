@@ -11,9 +11,13 @@ import Footer from './components/Footer.tsx';
 import ScrollToTop from './components/ScrollToTop.tsx';
 import EnquiryModal from './components/EnquiryModal.tsx';
 import HealthCampPromo from './components/HealthCampPromo.tsx';
+import LoginModal from './components/LoginModal.tsx';
+import AdminDashboard from './components/AdminDashboard.tsx';
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const advisorRef = useRef<AdvisorChatHandle>(null);
 
   const openEnquiry = () => setIsModalOpen(true);
@@ -28,11 +32,25 @@ function App() {
     alert("Downloading Scope X Strategic Laboratory Brochure...");
   };
 
+  const handleAdminSuccess = () => {
+    setIsLoginModalOpen(false);
+    setIsAdminOpen(true);
+  };
+
   return (
     <div className="min-h-screen flex flex-col scroll-smooth">
       <Header onEnquire={openEnquiry} />
       <EnquiryModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       <HealthCampPromo onAskAdvisor={handleAdvisorQuery} />
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
+        onSuccess={handleAdminSuccess} 
+      />
+      <AdminDashboard 
+        isOpen={isAdminOpen} 
+        onClose={() => setIsAdminOpen(false)} 
+      />
       
       <main className="flex-grow">
         <Hero onEnquire={openEnquiry} />
@@ -66,7 +84,6 @@ function App() {
         </section>
 
         <ServiceModels onEnquire={openEnquiry} />
-        {/* Fix: Corrected misspelled openEnquire to openEnquiry */}
         <Expertise onEnquire={openEnquiry} />
         <CorporateCheckups onAskAdvisor={handleAdvisorQuery} />
         <Testimonials />
@@ -111,7 +128,7 @@ function App() {
         <section id="advisor" className="h-0"></section>
       </main>
 
-      <Footer />
+      <Footer onAdminLogin={() => setIsLoginModalOpen(true)} />
       <AdvisorChat ref={advisorRef} />
       <ScrollToTop />
     </div>

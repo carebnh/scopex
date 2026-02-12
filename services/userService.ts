@@ -15,15 +15,26 @@ const DEFAULT_USERS: CRMUser[] = [
   {
     id: 'root-admin',
     email: 'admin@scopex.com',
-    password: '2240@Sopex',
+    password: '2240@SCOPEX',
     role: 'SUPER_ADMIN',
     fullName: 'Root Administrator'
   }
 ];
 
 export const initializeUsers = () => {
-  if (!localStorage.getItem(STORAGE_KEY)) {
+  const existing = localStorage.getItem(STORAGE_KEY);
+  if (!existing) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
+  } else {
+    // Force update the root-admin password if the code defaults changed
+    const users: CRMUser[] = JSON.parse(existing);
+    const rootIndex = users.findIndex(u => u.id === 'root-admin');
+    if (rootIndex !== -1) {
+      if (users[rootIndex].password !== DEFAULT_USERS[0].password) {
+        users[rootIndex].password = DEFAULT_USERS[0].password;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+      }
+    }
   }
 };
 
@@ -34,9 +45,10 @@ export const getAllUsers = (): CRMUser[] => {
 
 export const saveUser = (user: Omit<CRMUser, 'id'>): boolean => {
   const users = getAllUsers();
-  if (users.some(u => u.email === user.email)) return false;
+  const normalizedEmail = user.email.toLowerCase().trim();
+  if (users.some(u => u.email.toLowerCase() === normalizedEmail)) return false;
   
-  const newUser = { ...user, id: 'user_' + Date.now() };
+  const newUser = { ...user, email: normalizedEmail, id: 'user_' + Date.now() };
   localStorage.setItem(STORAGE_KEY, JSON.stringify([...users, newUser]));
   return true;
 };
@@ -50,7 +62,9 @@ export const removeUser = (id: string): boolean => {
 };
 
 export const validateLogin = (email: string, pass: string): CRMUser | null => {
+  initializeUsers(); // Ensure users are there and root password is up to date
   const users = getAllUsers();
-  const found = users.find(u => u.email === email && u.password === pass);
+  const normalizedEmail = email.toLowerCase().trim();
+  const found = users.find(u => u.email.toLowerCase() === normalizedEmail && u.password === pass);
   return found || null;
 };

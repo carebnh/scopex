@@ -66,13 +66,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, user, onClose, 
 
   const handleExportCSV = () => {
     if (user?.role === 'VIEWER') return;
-    const headers = ["Timestamp", "Entity Name", "Contact Person", "Phone/Mobile", "Interest/Headcount", "Type"];
+    const headers = ["Timestamp", "Entity Name", "Contact Person", "Phone/Mobile", "Email", "Interest/Headcount", "Date", "Type"];
     const rows = data.map(item => [
       item.timestamp,
       item.hospitalName || item.organization,
       item.contactName || item.fullName,
       item.mobile || item.phone,
+      item.email || "N/A",
       item.interest || item.headcount || "N/A",
+      item.date || "N/A",
       item.type.toUpperCase()
     ]);
 
@@ -83,7 +85,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, user, onClose, 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `ScopeX_CRM_Registry_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `ScopeX_CRM_Full_Registry_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -240,6 +242,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, user, onClose, 
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Institution / Entity</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Authority</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Mobile</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status / Details</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Action</th>
                 </tr>
               </thead>
@@ -250,6 +253,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, user, onClose, 
                     <td className="px-8 py-6 font-black text-scopex-blue">{item.hospitalName || item.organization}</td>
                     <td className="px-8 py-6 text-sm font-bold text-slate-800">{item.contactName || item.fullName}</td>
                     <td className="px-8 py-6 text-sm font-black text-slate-700">{item.mobile || item.phone}</td>
+                    <td className="px-8 py-6">
+                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight truncate max-w-[150px] block">
+                        {item.type === 'hospital' ? item.interest : `Date: ${item.date} • HC: ${item.headcount}`}
+                       </span>
+                    </td>
                     <td className="px-8 py-6" onClick={(e) => e.stopPropagation()}>
                       {user.role !== 'VIEWER' && (
                         <button onClick={() => handleDelete(item)} className="p-2.5 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all opacity-0 group-hover:opacity-100">
@@ -259,7 +267,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, user, onClose, 
                     </td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={5} className="py-32 text-center text-xs font-black text-gray-300 uppercase tracking-widest">No matching records</td></tr>
+                  <tr><td colSpan={6} className="py-32 text-center text-xs font-black text-gray-300 uppercase tracking-widest">No matching records</td></tr>
                 )}
               </tbody>
             </table>
@@ -273,22 +281,71 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, user, onClose, 
                 <button onClick={() => setSelectedLead(null)} className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
+                <div className="flex items-center space-x-3 mb-2">
+                   <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-white/20 ${selectedLead.type === 'hospital' ? 'bg-white/10' : 'bg-scopex-green'}`}>
+                    {selectedLead.type === 'hospital' ? 'Hospital Lead' : 'Camp Booking'}
+                   </span>
+                </div>
                 <h3 className="text-3xl font-black tracking-tighter uppercase">{selectedLead.hospitalName || selectedLead.organization}</h3>
-                <p className="text-[10px] font-black text-blue-100/60 uppercase mt-2">ID: {selectedLead.id}</p>
+                <p className="text-[10px] font-black text-blue-100/60 uppercase mt-2">Registry ID: {selectedLead.id}</p>
               </div>
 
-              <div className="p-10 space-y-8 overflow-y-auto max-h-[50vh] custom-scrollbar text-left">
+              <div className="p-10 space-y-8 overflow-y-auto max-h-[60vh] custom-scrollbar text-left">
                 <div className="grid grid-cols-2 gap-8">
-                  <div><p className="text-[10px] font-black text-gray-300 uppercase mb-1">Point of Contact</p><p className="text-lg font-black text-slate-800">{selectedLead.contactName || selectedLead.fullName}</p></div>
-                  <div><p className="text-[10px] font-black text-gray-300 uppercase mb-1">Mobile</p><p className="text-lg font-black text-scopex-blue">{selectedLead.mobile || selectedLead.phone}</p></div>
-                  <div className="col-span-2"><p className="text-[10px] font-black text-gray-300 uppercase mb-1">Requirements</p><div className="p-6 bg-gray-50 rounded-2xl border italic text-sm text-slate-600">{selectedLead.requirements || selectedLead.interest || "N/A"}</div></div>
+                  <div>
+                    <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Authorized Contact</p>
+                    <p className="text-lg font-black text-slate-800">{selectedLead.contactName || selectedLead.fullName}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Contact Information</p>
+                    <p className="text-lg font-black text-scopex-blue">{selectedLead.mobile || selectedLead.phone}</p>
+                    {selectedLead.email && <p className="text-xs font-bold text-gray-400 mt-1">{selectedLead.email}</p>}
+                  </div>
+
+                  {selectedLead.type === 'camp' && (
+                    <>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Preferred Date</p>
+                        <p className="text-lg font-black text-slate-800">{selectedLead.date}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Est. Headcount</p>
+                        <p className="text-lg font-black text-scopex-green">{selectedLead.headcount} staff members</p>
+                      </div>
+                    </>
+                  )}
+
+                  {selectedLead.type === 'hospital' && (
+                    <div className="col-span-2">
+                      <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Service of Interest</p>
+                      <p className="text-lg font-black text-scopex-blue">{selectedLead.interest}</p>
+                    </div>
+                  )}
+
+                  <div className="col-span-2">
+                    <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Project Requirements / Comments</p>
+                    <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 italic text-sm text-slate-600 leading-relaxed">
+                      {selectedLead.requirements || selectedLead.interest || "No additional comments provided."}
+                    </div>
+                  </div>
+
+                  <div className="col-span-2">
+                    <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Submission Timestamp</p>
+                    <p className="text-xs font-bold text-gray-400">{selectedLead.timestamp}</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="p-10 border-t flex gap-4 bg-white/80">
-                <button onClick={() => window.open(`tel:${selectedLead.mobile || selectedLead.phone}`)} className="flex-1 bg-scopex-blue text-white py-5 rounded-2xl font-black text-xs uppercase shadow-xl active:scale-95">Connect Now</button>
+              <div className="p-10 border-t flex gap-4 bg-white/80 shrink-0">
+                <button 
+                  onClick={() => window.open(`tel:${selectedLead.mobile || selectedLead.phone}`)} 
+                  className="flex-1 bg-scopex-blue text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all flex items-center justify-center space-x-3"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                  <span>Connect Now</span>
+                </button>
                 {user.role !== 'VIEWER' && (
-                  <button onClick={() => handleDelete(selectedLead)} disabled={isDeleting} className="px-8 bg-red-50 text-red-500 py-5 rounded-2xl font-black text-xs uppercase hover:bg-red-500 hover:text-white transition-all">Delete</button>
+                  <button onClick={() => handleDelete(selectedLead)} disabled={isDeleting} className="px-8 bg-red-50 text-red-500 py-5 rounded-2xl font-black text-xs uppercase hover:bg-red-500 hover:text-white transition-all disabled:opacity-50">Delete</button>
                 )}
               </div>
             </div>
@@ -296,7 +353,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, user, onClose, 
         )}
         
         <div className="px-8 py-5 border-t bg-white flex items-center justify-between text-[9px] font-black text-gray-300 uppercase tracking-widest italic">
-           <p>Scope X CRM Console v2.7 • Multi-User Mode Enabled</p>
+           <p>Scope X CRM Console v2.8 • Lead Mapping Engine Active</p>
         </div>
       </div>
     </div>

@@ -86,11 +86,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, user, onClose, 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'CLOSED':
-        return <span className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-green-200">Closed</span>;
+        return <span className="px-3 py-1 bg-gray-100 text-gray-500 rounded-lg text-[9px] font-black uppercase tracking-widest border border-gray-200">Closed / Archived</span>;
       case 'FOLLOWING_UP':
-        return <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-amber-200">In Progress</span>;
+        return <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-amber-200">Following Up</span>;
       default:
-        return <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-blue-200">New</span>;
+        return <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-blue-200">New Entry</span>;
     }
   };
 
@@ -350,138 +350,122 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, user, onClose, 
 
         {selectedLead && (
           <div className="fixed inset-0 z-[400] bg-slate-900/40 backdrop-blur-xl flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300 overflow-y-auto">
-            <div className="bg-white w-full max-w-5xl md:rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col md:flex-row border border-white/20 animate-in zoom-in duration-300">
+            <div className="bg-white w-full max-w-4xl md:rounded-[2.5rem] shadow-[0_50px_100px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col border border-white/20 animate-in zoom-in duration-300">
               
-              {/* Lead Sidebar (Executive Info) */}
-              <div className="md:w-80 bg-slate-900 text-white p-10 flex flex-col shrink-0">
-                <div className="mb-10">
-                   <div className="flex items-center space-x-3 mb-4">
-                      <div className="w-10 h-10 bg-scopex-green rounded-xl flex items-center justify-center text-white font-black">L</div>
-                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-scopex-green">Lead File</span>
-                   </div>
-                   <h3 className="text-2xl font-black tracking-tighter uppercase leading-tight mb-2">
-                    {selectedLead.hospitalName || selectedLead.organization}
-                   </h3>
-                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ID: {selectedLead.id}</p>
+              {/* Branding Header */}
+              <div className="bg-scopex-blue p-8 flex items-center justify-between text-white shrink-0">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-scopex-blue font-black text-xl shadow-lg">X</div>
+                  <div>
+                    <h3 className="text-xl font-black uppercase tracking-tight">Scope X CRM</h3>
+                    <p className="text-[10px] font-black text-blue-200/60 uppercase tracking-widest">Lead Identifier: {selectedLead.id}</p>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedLead(null)} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+
+              {/* Lead Information Dashboard */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar bg-white p-8 md:p-12">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 mb-12">
+                  <div className="flex-1">
+                    <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-none mb-2">{selectedLead.hospitalName || selectedLead.organization}</h2>
+                    <p className="text-xl font-black text-scopex-blue">{selectedLead.mobile || selectedLead.phone}</p>
+                  </div>
+                  <div className="shrink-0 flex flex-col items-end">
+                    <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-2 px-1">Current Registry Status</span>
+                    {getStatusBadge(selectedLead.status)}
+                  </div>
                 </div>
 
-                <div className="space-y-8 flex-1">
-                   <div>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Status</p>
-                      {getStatusBadge(selectedLead.status)}
-                   </div>
-                   <div>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Authority</p>
-                      <p className="text-lg font-black">{selectedLead.contactName || selectedLead.fullName}</p>
-                   </div>
-                   <div>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Contact Details</p>
-                      <p className="text-lg font-black text-scopex-green">{selectedLead.mobile || selectedLead.phone}</p>
-                      <p className="text-xs font-medium text-slate-400 mt-1">{selectedLead.email || 'No email provided'}</p>
-                   </div>
-                   {selectedLead.date && (
-                     <div>
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Schedule Date</p>
-                        <p className="text-lg font-black">{selectedLead.date}</p>
-                        <p className="text-xs font-bold text-scopex-green mt-1">{selectedLead.headcount} Pax Est.</p>
-                     </div>
-                   )}
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                  {/* Inquiry Details Column */}
+                  <div className="space-y-8">
+                    <section>
+                      <label className="block text-[10px] font-black text-gray-300 uppercase tracking-widest mb-3">Primary Solution of Interest</label>
+                      <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 font-black text-scopex-blue">
+                        {selectedLead.type === 'hospital' ? selectedLead.interest : 'Corporate Health Camp Logistics'}
+                      </div>
+                    </section>
 
-                <div className="pt-8 border-t border-white/5">
-                   <p className="text-[10px] font-bold text-slate-500 italic">Submitted: {selectedLead.timestamp}</p>
+                    <section>
+                      <label className="block text-[10px] font-black text-gray-300 uppercase tracking-widest mb-3">Detailed Requirements / Administrative Notes</label>
+                      <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 text-sm font-medium text-slate-500 italic leading-relaxed">
+                        {selectedLead.requirements || 'No additional specific instructions provided for this entry.'}
+                      </div>
+                    </section>
+
+                    <div className="flex items-center space-x-3 pt-4 border-t border-gray-50">
+                      <div className="w-2 h-2 rounded-full bg-scopex-green"></div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Registry Entry Created: {selectedLead.timestamp}</p>
+                    </div>
+                  </div>
+
+                  {/* Workflow & Communication Column */}
+                  <div className="space-y-8">
+                    <section>
+                      <label className="block text-[10px] font-black text-gray-300 uppercase tracking-widest mb-3">Workflow Lifecycle Management</label>
+                      <div className="flex flex-col gap-2">
+                        <button 
+                          onClick={() => handleUpdateStatus('NEW')}
+                          className={`w-full px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-left border ${selectedLead.status === 'NEW' || !selectedLead.status ? 'bg-blue-50 border-scopex-blue text-scopex-blue shadow-sm' : 'bg-white border-gray-100 text-gray-400 hover:border-scopex-blue'}`}
+                        >
+                          Mark as New / Unprocessed
+                        </button>
+                        <button 
+                          onClick={() => handleUpdateStatus('FOLLOWING_UP')}
+                          className={`w-full px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-left border ${selectedLead.status === 'FOLLOWING_UP' ? 'bg-amber-50 border-amber-500 text-amber-700 shadow-sm' : 'bg-white border-gray-100 text-gray-400 hover:border-amber-500'}`}
+                        >
+                          Mark as Following Up / In Progress
+                        </button>
+                        <button 
+                          onClick={() => handleUpdateStatus('CLOSED')}
+                          className={`w-full px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-left border ${selectedLead.status === 'CLOSED' ? 'bg-green-50 border-scopex-green text-scopex-green shadow-sm' : 'bg-white border-gray-100 text-gray-400 hover:border-scopex-green'}`}
+                        >
+                          Close & Archive Entry
+                        </button>
+                      </div>
+                    </section>
+
+                    <section>
+                      <label className="block text-[10px] font-black text-gray-300 uppercase tracking-widest mb-3">Internal Administrator Journal</label>
+                      <textarea 
+                        defaultValue={selectedLead.adminNotes || ''}
+                        onBlur={(e) => handleUpdateNotes(e.target.value)}
+                        placeholder="Log meeting notes, call outcomes, or specific closing details here..."
+                        className="w-full p-6 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-scopex-blue/10 rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all resize-none h-[180px] shadow-inner"
+                      ></textarea>
+                      <p className="mt-2 text-[9px] font-black text-gray-300 uppercase italic text-right tracking-tighter">Drafts are committed on focal exit (Blur).</p>
+                    </section>
+                  </div>
                 </div>
               </div>
 
-              {/* Lead Content & Management */}
-              <div className="flex-1 flex flex-col bg-white">
-                <div className="px-10 pt-10 pb-6 border-b border-gray-100 flex items-center justify-between">
-                   <h4 className="text-xl font-black text-scopex-blue uppercase tracking-tight">Lead Management Console</h4>
-                   <button onClick={() => setSelectedLead(null)} className="p-3 bg-gray-50 text-gray-400 hover:text-slate-900 rounded-2xl transition-all">
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
-                   </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-10 space-y-10 custom-scrollbar">
-                   {/* Requirements Block */}
-                   <section>
-                      <h5 className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-4">Original Inquiry Details</h5>
-                      <div className="p-8 bg-blue-50/30 border border-blue-50 rounded-[2.5rem] relative">
-                         <div className="absolute top-8 left-4 w-1 h-12 bg-scopex-blue/20 rounded-full"></div>
-                         <p className="text-lg font-black text-scopex-blue mb-2">
-                           {selectedLead.type === 'hospital' ? selectedLead.interest : 'Corporate Health Camp Logistics'}
-                         </p>
-                         <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                           {selectedLead.requirements || 'No specific requirements documented by the submitter.'}
-                         </p>
-                      </div>
-                   </section>
-
-                   {/* Management Controls */}
-                   <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                      <div>
-                         <h5 className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-4">Update Pipeline Status</h5>
-                         <div className="grid grid-cols-1 gap-3">
-                            <button 
-                              onClick={() => handleUpdateStatus('NEW')} 
-                              disabled={isUpdating}
-                              className={`px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-left border transition-all flex items-center justify-between ${selectedLead.status === 'NEW' ? 'bg-blue-50 border-scopex-blue text-scopex-blue' : 'bg-white border-gray-100 text-gray-400 hover:border-scopex-blue'}`}
-                            >
-                               <span>New Registry</span>
-                               {selectedLead.status === 'NEW' && <div className="w-2 h-2 rounded-full bg-scopex-blue animate-pulse"></div>}
-                            </button>
-                            <button 
-                              onClick={() => handleUpdateStatus('FOLLOWING_UP')} 
-                              disabled={isUpdating}
-                              className={`px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-left border transition-all flex items-center justify-between ${selectedLead.status === 'FOLLOWING_UP' ? 'bg-amber-50 border-amber-500 text-amber-600' : 'bg-white border-gray-100 text-gray-400 hover:border-amber-500'}`}
-                            >
-                               <span>Following Up</span>
-                               {selectedLead.status === 'FOLLOWING_UP' && <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>}
-                            </button>
-                            <button 
-                              onClick={() => handleUpdateStatus('CLOSED')} 
-                              disabled={isUpdating}
-                              className={`px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-left border transition-all flex items-center justify-between ${selectedLead.status === 'CLOSED' ? 'bg-green-50 border-scopex-green text-scopex-green' : 'bg-white border-gray-100 text-gray-400 hover:border-scopex-green'}`}
-                            >
-                               <span>Close & Archive</span>
-                               {selectedLead.status === 'CLOSED' && <div className="w-2 h-2 rounded-full bg-scopex-green animate-pulse"></div>}
-                            </button>
-                         </div>
-                      </div>
-
-                      <div className="flex flex-col">
-                         <h5 className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-4">Administrative Comments</h5>
-                         <textarea 
-                           className="flex-1 w-full p-6 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-scopex-blue/10 rounded-[2rem] text-sm font-bold text-slate-700 outline-none transition-all resize-none shadow-inner"
-                           placeholder="Type internal notes here..."
-                           defaultValue={selectedLead.adminNotes || ''}
-                           onBlur={(e) => handleUpdateNotes(e.target.value)}
-                         ></textarea>
-                         <p className="mt-2 text-[9px] font-bold text-gray-400 uppercase tracking-tighter italic text-right">Drafts are saved on focal exit (Blur).</p>
-                      </div>
-                   </section>
-                </div>
-
-                {/* Footer Actions */}
-                <div className="p-10 border-t bg-gray-50/50 flex flex-col md:flex-row gap-4 shrink-0">
+              {/* Action Bar */}
+              <div className="p-8 bg-gray-50 border-t flex flex-col md:flex-row gap-4 shrink-0">
+                <button 
+                  onClick={() => window.open(`tel:${selectedLead.mobile || selectedLead.phone}`)}
+                  className="flex-1 bg-scopex-blue text-white py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl hover:bg-slate-900 transition-all flex items-center justify-center space-x-3"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                  <span>Connect With Lead</span>
+                </button>
+                {isAdmin && (
                   <button 
-                    onClick={() => window.open(`tel:${selectedLead.mobile || selectedLead.phone}`)} 
-                    className="flex-1 bg-scopex-blue text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.25em] shadow-xl active:scale-95 transition-all flex items-center justify-center space-x-3"
+                    onClick={() => handleDelete(selectedLead)}
+                    className="px-8 bg-white border border-red-100 text-red-500 py-5 rounded-2xl font-black text-xs uppercase hover:bg-red-500 hover:text-white transition-all shadow-sm"
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                    <span>Connect Immediately</span>
+                    Delete Permanently
                   </button>
-                  {isAdmin && (
-                    <button onClick={() => handleDelete(selectedLead)} disabled={isDeleting} className="px-10 bg-white border border-red-100 text-red-500 py-5 rounded-2xl font-black text-xs uppercase hover:bg-red-500 hover:text-white transition-all disabled:opacity-50">Remove File</button>
-                  )}
-                </div>
+                )}
               </div>
             </div>
           </div>
         )}
         
         <div className="px-8 py-5 border-t bg-white flex items-center justify-between text-[9px] font-black text-gray-300 uppercase tracking-widest italic">
-           <p>Scope X CRM Console v3.1 • {isAdmin ? 'Global Orchestration Access' : 'Standard View Mode'}</p>
+           <p>Scope X CRM Console v3.2 • {isAdmin ? 'Global Orchestration Access' : 'Standard View Mode'}</p>
         </div>
       </div>
     </div>

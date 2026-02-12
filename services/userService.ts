@@ -62,7 +62,7 @@ export const removeUser = (id: string): boolean => {
 };
 
 export const validateLogin = (email: string, pass: string): CRMUser | null => {
-  initializeUsers(); // Ensure users are there and root password is up to date
+  initializeUsers(); 
   const users = getAllUsers();
   const normalizedEmail = email.toLowerCase().trim();
   const found = users.find(u => u.email.toLowerCase() === normalizedEmail && u.password === pass);

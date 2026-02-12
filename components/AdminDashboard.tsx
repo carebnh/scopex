@@ -283,21 +283,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, user, onClose, 
                 </button>
                 <div className="flex items-center space-x-3 mb-2">
                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-white/20 ${selectedLead.type === 'hospital' ? 'bg-white/10' : 'bg-scopex-green'}`}>
-                    {selectedLead.type === 'hospital' ? 'Hospital Lead' : 'Camp Booking'}
+                    {selectedLead.type === 'hospital' ? 'Hospital Inquiry' : 'Health Camp Booking'}
                    </span>
                 </div>
-                <h3 className="text-3xl font-black tracking-tighter uppercase">{selectedLead.hospitalName || selectedLead.organization}</h3>
-                <p className="text-[10px] font-black text-blue-100/60 uppercase mt-2">Registry ID: {selectedLead.id}</p>
+                <h3 className="text-3xl font-black tracking-tighter uppercase leading-tight">{selectedLead.hospitalName || selectedLead.organization}</h3>
+                <p className="text-[10px] font-black text-blue-100/60 uppercase mt-2 tracking-widest">Lead Identifier: {selectedLead.id}</p>
               </div>
 
               <div className="p-10 space-y-8 overflow-y-auto max-h-[60vh] custom-scrollbar text-left">
                 <div className="grid grid-cols-2 gap-8">
-                  <div>
-                    <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Authorized Contact</p>
+                  <div className="col-span-2 md:col-span-1">
+                    <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Full Name / Point of Contact</p>
                     <p className="text-lg font-black text-slate-800">{selectedLead.contactName || selectedLead.fullName}</p>
                   </div>
-                  <div>
-                    <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Contact Information</p>
+                  <div className="col-span-2 md:col-span-1">
+                    <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Verified Contact Information</p>
                     <p className="text-lg font-black text-scopex-blue">{selectedLead.mobile || selectedLead.phone}</p>
                     {selectedLead.email && <p className="text-xs font-bold text-gray-400 mt-1">{selectedLead.email}</p>}
                   </div>
@@ -305,33 +305,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, user, onClose, 
                   {selectedLead.type === 'camp' && (
                     <>
                       <div>
-                        <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Preferred Date</p>
+                        <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Requested Event Date</p>
                         <p className="text-lg font-black text-slate-800">{selectedLead.date}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Est. Headcount</p>
-                        <p className="text-lg font-black text-scopex-green">{selectedLead.headcount} staff members</p>
+                        <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Estimated Headcount</p>
+                        <p className="text-lg font-black text-scopex-green">{selectedLead.headcount} Personnel</p>
                       </div>
                     </>
                   )}
 
                   {selectedLead.type === 'hospital' && (
                     <div className="col-span-2">
-                      <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Service of Interest</p>
-                      <p className="text-lg font-black text-scopex-blue">{selectedLead.interest}</p>
+                      <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Primary Solution of Interest</p>
+                      <div className="px-5 py-3 bg-blue-50/50 rounded-xl border border-scopex-blue/10">
+                        <p className="text-sm font-black text-scopex-blue">{selectedLead.interest}</p>
+                      </div>
                     </div>
                   )}
 
                   <div className="col-span-2">
-                    <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Project Requirements / Comments</p>
-                    <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 italic text-sm text-slate-600 leading-relaxed">
-                      {selectedLead.requirements || selectedLead.interest || "No additional comments provided."}
+                    <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Detailed Requirements / Administrative Notes</p>
+                    <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 italic text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+                      {selectedLead.requirements || "No additional specific instructions provided for this entry."}
                     </div>
                   </div>
 
-                  <div className="col-span-2">
-                    <p className="text-[10px] font-black text-gray-300 uppercase mb-1 tracking-widest">Submission Timestamp</p>
-                    <p className="text-xs font-bold text-gray-400">{selectedLead.timestamp}</p>
+                  <div className="col-span-2 pt-4 border-t border-gray-50">
+                    <div className="flex items-center space-x-2">
+                       <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Registry Entry Created: {selectedLead.timestamp}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -339,10 +343,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, user, onClose, 
               <div className="p-10 border-t flex gap-4 bg-white/80 shrink-0">
                 <button 
                   onClick={() => window.open(`tel:${selectedLead.mobile || selectedLead.phone}`)} 
-                  className="flex-1 bg-scopex-blue text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all flex items-center justify-center space-x-3"
+                  className="flex-1 bg-scopex-blue text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.25em] shadow-xl active:scale-95 transition-all flex items-center justify-center space-x-3"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                  <span>Connect Now</span>
+                  <span>Connect with Lead</span>
                 </button>
                 {user.role !== 'VIEWER' && (
                   <button onClick={() => handleDelete(selectedLead)} disabled={isDeleting} className="px-8 bg-red-50 text-red-500 py-5 rounded-2xl font-black text-xs uppercase hover:bg-red-500 hover:text-white transition-all disabled:opacity-50">Delete</button>
@@ -353,7 +357,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, user, onClose, 
         )}
         
         <div className="px-8 py-5 border-t bg-white flex items-center justify-between text-[9px] font-black text-gray-300 uppercase tracking-widest italic">
-           <p>Scope X CRM Console v2.8 • Lead Mapping Engine Active</p>
+           <p>Scope X CRM Console v2.9 • {user.role === 'VIEWER' ? 'Read-Only View Enabled' : 'Full Control Engine Active'}</p>
         </div>
       </div>
     </div>

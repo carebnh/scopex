@@ -1,114 +1,106 @@
 
-/**
- * Submission & Admin Service for Scope X Diagnostics
- * 
- * BACKEND APPS SCRIPT CODE (Update your Script with this):
- * ============================================================
- * function doPost(e) {
- *   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
- *   var data = JSON.parse(e.postData.contents);
- *   
- *   // ACTION: FETCH DATA
- *   if (data.action === 'fetch') {
- *     var rows = sheet.getDataRange().getValues();
- *     var headers = rows[0];
- *     var jsonData = rows.slice(1).map(function(row, index) {
- *       var obj = { rowId: index + 2 }; // Store row index for deletion
- *       headers.forEach(function(h, i) { obj[h] = row[i]; });
- *       return obj;
- *     });
- *     return ContentService.createTextOutput(JSON.stringify(jsonData)).setMimeType(ContentService.MimeType.JSON);
- *   }
- *
- *   // ACTION: DELETE DATA
- *   if (data.action === 'delete') {
- *     if (data.rowId) {
- *       sheet.deleteRow(data.rowId);
- *       return ContentService.createTextOutput("Deleted").setMimeType(ContentService.MimeType.TEXT);
- *     }
- *   }
- *
- *   // ACTION: SUBMIT DATA
- *   var timestamp = new Date().toLocaleString();
- *   if (data.type === 'hospital') {
- *     sheet.appendRow([timestamp, data.hospitalName, data.contactName, data.mobile, data.interest, 'hospital']);
- *   } else if (data.type === 'camp') {
- *     sheet.appendRow([timestamp, data.fullName, data.organization, data.phone, data.email, data.date, data.headcount, data.requirements, 'camp']);
- *   }
- *   
- *   return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
- * }
- * ============================================================
- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  getDocs, 
+  deleteDoc, 
+  doc, 
+  query, 
+  orderBy, 
+  serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-EXAMPLE-REPLACE-THIS/exec';
+/**
+ * FIREBASE CONFIGURATION
+ * 1. Go to Firebase Console (console.firebase.google.com)
+ * 2. Create a project "Scope X Diagnostics"
+ * 3. Add a Web App and copy the config below
+ */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "scope-x-diagnostics.firebaseapp.com",
+  projectId: "scope-x-diagnostics",
+  storageBucket: "scope-x-diagnostics.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 export const submitHospitalEnquiry = async (data: any): Promise<boolean> => {
   try {
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({ type: 'hospital', ...data })
+    await addDoc(collection(db, "hospital_leads"), {
+      ...data,
+      type: 'hospital',
+      createdAt: serverTimestamp()
     });
     return true;
   } catch (error) {
-    console.error('Submission failed:', error);
-    return true;
+    console.error('Firebase Submission failed:', error);
+    return false;
   }
 };
 
 export const submitCampBooking = async (data: any): Promise<boolean> => {
   try {
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({ type: 'camp', ...data })
+    await addDoc(collection(db, "camp_bookings"), {
+      ...data,
+      type: 'camp',
+      createdAt: serverTimestamp()
     });
     return true;
   } catch (error) {
-    console.error('Submission failed:', error);
-    return true;
+    console.error('Firebase Submission failed:', error);
+    return false;
   }
 };
 
 export const fetchAdminData = async (): Promise<any[]> => {
-  // Use mock data if URL is still placeholder
-  if (APPS_SCRIPT_URL.includes('EXAMPLE')) {
-    return [
-      { rowId: 2, timestamp: '10/25/2024, 2:30 PM', hospitalName: 'Apex Heart Institute', contactName: 'Dr. Rahul Sharma', mobile: '9827012345', interest: 'Full Lab Outsourcing', type: 'hospital' },
-      { rowId: 3, timestamp: '10/26/2024, 11:15 AM', organization: 'Tech Mahindra SEZ', fullName: 'Amit Verma', phone: '8889912344', email: 'amit@techm.com', date: '2024-11-15', headcount: '200-500', requirements: 'Full wellness screening for 400 employees over 2 days at the main campus.', type: 'camp' },
-      { rowId: 4, timestamp: '10/27/2024, 4:45 PM', hospitalName: 'Indore City Hospital', contactName: 'Mrs. Sunita Iyer', mobile: '7771234455', interest: 'Hybrid Partnership', type: 'hospital' },
-      { rowId: 5, timestamp: '10/28/2024, 9:00 AM', organization: 'Global Infotech Park', fullName: 'Sandeep Rai', phone: '9123456789', email: 'sandeep@infotech.com', date: '2024-12-05', headcount: '2000+', requirements: 'Blood work and vitals check for night shift staff.', type: 'camp' }
-    ];
-  }
-
   try {
-    const response = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'fetch' })
+    const hospitalQuery = query(collection(db, "hospital_leads"), orderBy("createdAt", "desc"));
+    const campQuery = query(collection(db, "camp_bookings"), orderBy("createdAt", "desc"));
+
+    const [hospitalSnap, campSnap] = await Promise.all([
+      getDocs(hospitalQuery),
+      getDocs(campQuery)
+    ]);
+
+    const hospitalLeads = hospitalSnap.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      // Format timestamp for display if it's a Firestore Timestamp
+      timestamp: doc.data().createdAt?.toDate().toLocaleString() || doc.data().timestamp
+    }));
+
+    const campBookings = campSnap.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      timestamp: doc.data().createdAt?.toDate().toLocaleString() || doc.data().timestamp
+    }));
+
+    return [...hospitalLeads, ...campBookings].sort((a, b) => {
+      const dateA = new Date(a.timestamp).getTime();
+      const dateB = new Date(b.timestamp).getTime();
+      return dateB - dateA;
     });
-    return await response.json();
   } catch (error) {
-    console.error('Fetch failed:', error);
+    console.error('Firebase Fetch failed:', error);
+    // Return empty or mock if config is missing
     return [];
   }
 };
 
-export const deleteLead = async (rowId: number): Promise<boolean> => {
-  if (APPS_SCRIPT_URL.includes('EXAMPLE')) {
-    console.log('Mock Delete triggered for row:', rowId);
-    return true;
-  }
-  
+export const deleteLead = async (id: string, type: 'hospital' | 'camp'): Promise<boolean> => {
   try {
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({ action: 'delete', rowId })
-    });
+    const collectionName = type === 'hospital' ? 'hospital_leads' : 'camp_bookings';
+    await deleteDoc(doc(db, collectionName, id));
     return true;
   } catch (error) {
-    console.error('Delete failed:', error);
+    console.error('Firebase Delete failed:', error);
     return false;
   }
 };

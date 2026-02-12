@@ -32,25 +32,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
     setLoading(false);
   };
 
-  const handleDelete = async (rowId: number) => {
-    if (!window.confirm("Are you absolutely sure you want to permanently delete this lead? This action cannot be undone.")) return;
+  const handleDelete = async (lead: any) => {
+    if (!window.confirm("Are you absolutely sure you want to permanently delete this record?")) return;
     
     setIsDeleting(true);
-    const success = await deleteLead(rowId);
+    // In Firebase, we use the document 'id'
+    const success = await deleteLead(lead.id, lead.type);
     if (success) {
-      setData(prev => prev.filter(item => item.rowId !== rowId));
+      setData(prev => prev.filter(item => item.id !== lead.id));
       setSelectedLead(null);
     } else {
-      alert("Failed to delete lead. If using mock data, this is normal. Check console for details.");
+      alert("Failed to delete record. Check Firebase rules and configuration.");
     }
     setIsDeleting(false);
   };
 
   const filteredData = data.filter(item => {
-    // Check type based on existing properties or explicit type flag
-    const isHospital = item.type === 'hospital' || item.hospitalName;
-    const isCamp = item.type === 'camp' || item.organization;
-    
+    const isHospital = item.type === 'hospital';
+    const isCamp = item.type === 'camp';
     const isCorrectTab = activeTab === 'hospital' ? isHospital : isCamp;
     
     const searchLower = searchQuery.toLowerCase();
@@ -63,28 +62,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
 
     return isCorrectTab && matchesSearch;
   });
-
-  const exportToCSV = () => {
-    const headers = activeTab === 'hospital' 
-      ? ['Timestamp', 'Hospital', 'Contact', 'Mobile', 'Interest']
-      : ['Timestamp', 'Organization', 'Contact', 'Email', 'Phone', 'Date', 'Headcount', 'Requirements'];
-    
-    const rows = filteredData.map(item => {
-      return activeTab === 'hospital'
-        ? [item.timestamp, item.hospitalName, item.contactName, item.mobile, item.interest]
-        : [item.timestamp, item.organization, item.fullName, item.email, item.phone, item.date, item.headcount, item.requirements];
-    });
-
-    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `scopex_${activeTab}_leads_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   if (!isOpen) return null;
 
@@ -101,23 +78,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
               </svg>
             </div>
             <div>
-              <h2 className="text-2xl font-black text-scopex-blue tracking-tighter uppercase leading-none mb-1">Intelligence Hub</h2>
+              <h2 className="text-2xl font-black text-scopex-blue tracking-tighter uppercase leading-none mb-1">Firebase Console</h2>
               <div className="flex items-center space-x-3">
                  <span className="flex h-2 w-2 rounded-full bg-scopex-green"></span>
-                 <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase">Secured Registry Live</span>
+                 <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase">Live Firestore Stream</span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center space-x-3">
             <button 
-              onClick={exportToCSV}
-              className="flex items-center space-x-2 bg-gray-50 text-scopex-blue px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-scopex-blue hover:text-white transition-all border border-gray-100 shadow-sm"
+              onClick={loadData}
+              className="p-4 bg-gray-50 text-scopex-blue hover:bg-scopex-blue hover:text-white rounded-2xl transition-all shadow-sm"
+              title="Refresh Data"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              <svg className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              <span>Export CSV</span>
             </button>
             <button 
               onClick={onClose}
@@ -130,38 +107,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* Stats Summary */}
-        <div className="p-8 bg-gray-50/50 border-b border-gray-100 space-y-8 shrink-0">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Logs</p>
-                <p className="text-3xl font-black text-scopex-blue">{data.length}</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-50 text-scopex-blue rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Hospital Partners</p>
-                <p className="text-3xl font-black text-scopex-green">{data.filter(i => i.type === 'hospital' || i.hospitalName).length}</p>
-              </div>
-              <div className="w-12 h-12 bg-green-50 text-scopex-green rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Camp Bookings</p>
-                <p className="text-3xl font-black text-orange-500">{data.filter(i => i.type === 'camp' || i.organization).length}</p>
-              </div>
-              <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-              </div>
-            </div>
-          </div>
-
+        {/* Search & Tabs */}
+        <div className="p-8 bg-gray-50/50 border-b border-gray-100 space-y-4 shrink-0">
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <div className="bg-white p-1 rounded-2xl flex border border-gray-100 shadow-sm">
               <button 
@@ -179,24 +126,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
             </div>
             
             <div className="relative flex-1">
-              <svg className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               <input 
                 type="text" 
-                placeholder="Search by name, institution or mobile..."
+                placeholder="Search leads..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-14 pr-6 py-4 bg-white border border-gray-100 rounded-2xl focus:ring-4 focus:ring-scopex-blue/5 outline-none transition-all font-bold text-sm shadow-sm placeholder:text-gray-300"
+                className="w-full pl-14 pr-6 py-4 bg-white border border-gray-100 rounded-2xl focus:ring-4 focus:ring-scopex-blue/5 outline-none transition-all font-bold text-sm shadow-sm"
               />
+              <svg className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </div>
           </div>
         </div>
 
-        {/* Data Registry Table */}
+        {/* Registry Table */}
         <div className="flex-1 overflow-auto custom-scrollbar p-0 bg-white">
           {loading ? (
             <div className="h-full flex items-center justify-center flex-col space-y-4">
               <div className="w-12 h-12 border-4 border-scopex-blue/10 border-t-scopex-blue rounded-full animate-spin"></div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Synchronizing Registry...</p>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Querying Firestore...</p>
             </div>
           ) : (
             <table className="w-full text-left border-collapse min-w-[1000px]">
@@ -213,18 +160,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
               <tbody className="divide-y divide-gray-50">
                 {filteredData.length > 0 ? filteredData.map((item, idx) => (
                   <tr 
-                    key={idx} 
+                    key={item.id || idx} 
                     onClick={() => setSelectedLead(item)}
                     className="hover:bg-gray-50/80 transition-all cursor-pointer group active:scale-[0.998]"
                   >
                     <td className="px-8 py-6 text-xs font-bold text-gray-400">{item.timestamp}</td>
                     <td className="px-8 py-6">
                       <p className="text-sm font-black text-scopex-blue group-hover:underline underline-offset-4 decoration-2">{item.hospitalName || item.organization}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-0.5">{item.type === 'camp' || item.organization ? 'Corporate' : 'Healthcare'}</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-0.5">{item.type === 'camp' ? 'Corporate' : 'Healthcare'}</p>
                     </td>
                     <td className="px-8 py-6">
                       <p className="text-sm font-bold text-slate-800">{item.contactName || item.fullName}</p>
-                      {item.email && <p className="text-[10px] text-gray-400 truncate max-w-[150px]">{item.email}</p>}
                     </td>
                     <td className="px-8 py-6 text-sm font-black text-slate-700">{item.mobile || item.phone}</td>
                     <td className="px-8 py-6">
@@ -241,7 +187,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                         </button>
                         <button 
-                          onClick={() => handleDelete(item.rowId)}
+                          onClick={() => handleDelete(item)}
                           className="p-2.5 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all"
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -251,12 +197,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={6} className="py-20 text-center">
-                       <div className="flex flex-col items-center">
-                          <svg className="w-16 h-16 text-gray-100 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                          <p className="text-sm font-black text-gray-300 uppercase tracking-[0.2em]">No matching records found</p>
-                       </div>
-                    </td>
+                    <td colSpan={6} className="py-20 text-center text-gray-300 font-black uppercase tracking-[0.2em]">No Records in Cloud</td>
                   </tr>
                 )}
               </tbody>
@@ -264,12 +205,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
           )}
         </div>
 
-        {/* Enhanced Lead Detail Modal */}
+        {/* Lead Detail Overlay */}
         {selectedLead && (
           <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.4)] overflow-hidden animate-in zoom-in duration-300 border border-white/20 flex flex-col">
-              
-              {/* Detail Header */}
+            <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col border border-white/20 animate-in zoom-in duration-300">
               <div className="bg-scopex-blue p-10 text-white relative">
                 <button 
                   onClick={() => setSelectedLead(null)}
@@ -277,104 +216,55 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                 >
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
-                <div className="flex items-center space-x-6">
-                  <div className="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center text-3xl shadow-inner backdrop-blur-md border border-white/10">
-                    {selectedLead.hospitalName ? '🏥' : '🏢'}
-                  </div>
-                  <div>
-                    <h3 className="text-3xl font-black tracking-tighter leading-tight">{selectedLead.hospitalName || selectedLead.organization}</h3>
-                    <div className="flex items-center space-x-3 mt-1.5">
-                      <span className="px-3 py-1 bg-white/10 rounded-full text-[9px] font-black uppercase tracking-widest">Entry ID: #{selectedLead.rowId}</span>
-                      <span className="flex h-2 w-2 rounded-full bg-scopex-green"></span>
-                      <span className="text-[9px] font-black text-blue-100/60 uppercase tracking-widest">Verified Log</span>
-                    </div>
-                  </div>
-                </div>
+                <h3 className="text-3xl font-black tracking-tighter leading-tight">{selectedLead.hospitalName || selectedLead.organization}</h3>
+                <p className="text-[10px] font-black text-blue-100/60 uppercase tracking-widest mt-2">Firestore Document ID: {selectedLead.id}</p>
               </div>
 
-              {/* Detail Content */}
               <div className="p-10 space-y-8 overflow-y-auto max-h-[50vh] custom-scrollbar">
                 <div className="grid grid-cols-2 gap-x-8 gap-y-6">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Representative Name</p>
-                    <p className="text-lg font-black text-slate-800 leading-tight">{selectedLead.contactName || selectedLead.fullName}</p>
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact</p>
+                    <p className="text-lg font-black text-slate-800">{selectedLead.contactName || selectedLead.fullName}</p>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Submission Time</p>
-                    <p className="text-sm font-bold text-slate-500">{selectedLead.timestamp}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact Number</p>
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mobile</p>
                     <p className="text-lg font-black text-scopex-blue">{selectedLead.mobile || selectedLead.phone}</p>
                   </div>
                   {selectedLead.email && (
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Business Email</p>
-                      <p className="text-sm font-bold text-slate-800 truncate">{selectedLead.email}</p>
+                    <div className="col-span-2">
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email</p>
+                      <p className="text-sm font-bold text-slate-800">{selectedLead.email}</p>
                     </div>
                   )}
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{selectedLead.hospitalName ? 'Inquiry Type' : 'Event Date'}</p>
-                    <p className="text-lg font-black text-scopex-green">{selectedLead.interest || selectedLead.date}</p>
-                  </div>
-                  {selectedLead.headcount && (
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Expected Headcount</p>
-                      <p className="text-lg font-black text-slate-800">{selectedLead.headcount}</p>
+                  {selectedLead.requirements && (
+                    <div className="col-span-2 p-6 bg-gray-50 rounded-2xl border border-gray-100">
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Requirements</p>
+                      <p className="text-sm text-slate-600 font-medium italic">"{selectedLead.requirements}"</p>
                     </div>
                   )}
                 </div>
-
-                {selectedLead.requirements && (
-                  <div className="space-y-3 p-8 bg-gray-50 rounded-[2rem] border border-gray-100 shadow-inner">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center">
-                      <svg className="w-3 h-3 mr-2 text-scopex-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
-                      Specific Requirements
-                    </p>
-                    <p className="text-sm font-semibold text-slate-600 leading-relaxed italic">"{selectedLead.requirements}"</p>
-                  </div>
-                )}
               </div>
 
-              {/* Action Buttons */}
-              <div className="p-10 border-t border-gray-100 flex gap-4 bg-gray-50/50">
+              <div className="p-10 border-t border-gray-100 flex gap-4">
                 <button 
                   onClick={() => window.open(`tel:${selectedLead.mobile || selectedLead.phone}`)}
-                  className="flex-1 bg-scopex-blue text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-900/10 active:scale-95 transition-all flex items-center justify-center space-x-2"
+                  className="flex-1 bg-scopex-blue text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-900/10 transition-all flex items-center justify-center space-x-2"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                  <span>Call Lead</span>
+                  <span>Connect</span>
                 </button>
                 <button 
-                  onClick={() => handleDelete(selectedLead.rowId)}
+                  onClick={() => handleDelete(selectedLead)}
                   disabled={isDeleting}
-                  className="px-8 bg-red-50 text-red-500 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center space-x-2"
+                  className="px-8 bg-red-50 text-red-500 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                  <span>Delete</span>
-                </button>
-                <button 
-                  onClick={() => setSelectedLead(null)}
-                  className="px-8 bg-gray-100 text-slate-400 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95"
-                >
-                  Dismiss
+                  Delete Record
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Footer Sync Status */}
-        <div className="px-8 py-5 border-t border-gray-100 flex items-center justify-between text-[10px] font-black text-gray-300 uppercase tracking-widest shrink-0 bg-white">
-          <p>Scope X Diagnostics Administration v1.2</p>
-          <div className="flex items-center space-x-6">
-             <div className="flex items-center space-x-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-scopex-green"></span>
-                <span>Active Registry: {filteredData.length} Records</span>
-             </div>
-             <p className="opacity-50">Last Update: {new Date().toLocaleTimeString()}</p>
-          </div>
-        </div>
       </div>
     </div>
   );

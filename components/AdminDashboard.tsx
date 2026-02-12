@@ -1,23 +1,31 @@
 
 import React, { useState, useEffect } from 'react';
 import { fetchAdminData, deleteLead } from '../services/submissionService.ts';
+import { CRMUser, getAllUsers, saveUser, removeUser } from '../services/userService.ts';
 
 interface AdminDashboardProps {
   isOpen: boolean;
+  user: CRMUser | null;
   onClose: () => void;
+  onLogout: () => void;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, user, onClose, onLogout }) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'hospital' | 'camp'>('hospital');
+  const [activeTab, setActiveTab] = useState<'hospital' | 'camp' | 'users'>('hospital');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLead, setSelectedLead] = useState<any | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // User Management State
+  const [users, setUsers] = useState<CRMUser[]>([]);
+  const [newUser, setNewUser] = useState({ email: '', password: '', role: 'VIEWER' as any, fullName: '' });
 
   useEffect(() => {
     if (isOpen) {
       loadData();
+      if (user?.role === 'SUPER_ADMIN') setUsers(getAllUsers());
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -27,10 +35,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
 
   const loadData = async () => {
     setLoading(true);
-    // Explicitly clear current data to show visual reload if needed
-    // setData([]); 
     try {
-      // Small delay to ensure the user sees the refresh happening
       await new Promise(resolve => setTimeout(resolve, 500));
       const result = await fetchAdminData();
       setData(result);
@@ -41,7 +46,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleAddUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (saveUser(newUser)) {
+      setUsers(getAllUsers());
+      setNewUser({ email: '', password: '', role: 'VIEWER', fullName: '' });
+      alert("New user authorized successfully.");
+    } else {
+      alert("User email already exists in registry.");
+    }
+  };
+
+  const handleRemoveUser = (id: string) => {
+    if (confirm("Revoke access for this user permanently?")) {
+      removeUser(id);
+      setUsers(getAllUsers());
+    }
+  };
+
   const handleExportCSV = () => {
+    if (user?.role === 'VIEWER') return;
     const headers = ["Timestamp", "Entity Name", "Contact Person", "Phone/Mobile", "Interest/Headcount", "Type"];
     const rows = data.map(item => [
       item.timestamp,
@@ -53,19 +77,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
     ]);
 
     const csvContent = "data:text/csv;charset=utf-8," 
-      + headers.join(",") + "\n"
-      + rows.map(e => e.join(",")).join("\n");
+      + headers.map(h => `"${h}"`).join(",") + "\n"
+      + rows.map(e => e.map(cell => `"${cell}"`).join(",")).join("\n");
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `ScopeX_CRM_Registry_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
+    link.setAttribute("download", `ScopeX_CRM_Registry_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   const handleDelete = async (lead: any) => {
+    if (user?.role === 'VIEWER') return;
     if (!window.confirm("Permanently remove this entry from the CRM registry?")) return;
     
     setIsDeleting(true);
@@ -88,7 +113,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
     return isCorrectTab && matchesSearch;
   });
 
-  if (!isOpen) return null;
+  if (!isOpen || !user) return null;
 
   return (
     <div className="fixed inset-0 z-[300] bg-slate-900/40 backdrop-blur-xl flex items-center justify-center p-0 md:p-6 animate-in fade-in duration-300">
@@ -105,35 +130,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
             <div>
               <h2 className="text-2xl font-black text-scopex-blue tracking-tighter uppercase leading-none mb-1">CRM Administrative Hub</h2>
               <div className="flex items-center space-x-3">
-                 <span className={`flex h-2 w-2 rounded-full ${data.length > 0 ? 'bg-scopex-green' : 'bg-orange-400 animate-pulse'}`}></span>
                  <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase">
-                  Registry Status: {data.length} Leads Synchronized
+                  Logged in as: <span className="text-scopex-blue">{user.fullName} ({user.role})</span>
                  </span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center space-x-3">
-            <button 
-              onClick={handleExportCSV}
-              disabled={data.length === 0}
-              className="px-6 py-4 bg-scopex-green text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-green-900/10 active:scale-95 disabled:opacity-50 disabled:grayscale"
-            >
-              Export CSV
-            </button>
+            {user.role !== 'VIEWER' && (
+              <button 
+                onClick={handleExportCSV}
+                className="px-6 py-4 bg-scopex-green text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-green-900/10 active:scale-95"
+              >
+                Export CSV
+              </button>
+            )}
             <button 
               onClick={loadData}
               className={`p-4 bg-gray-50 text-scopex-blue hover:bg-scopex-blue hover:text-white rounded-2xl transition-all shadow-sm ${loading ? 'opacity-50 pointer-events-none' : ''}`}
-              title="Refresh Registry"
             >
               <svg className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
-            <button 
-              onClick={onClose}
-              className="p-4 bg-gray-100 text-gray-400 hover:text-slate-900 rounded-2xl transition-all shadow-sm"
-            >
+            <button onClick={onLogout} className="p-4 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-2xl transition-all shadow-sm" title="Log Out">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
+            <button onClick={onClose} className="p-4 bg-gray-100 text-gray-400 hover:text-slate-900 rounded-2xl transition-all shadow-sm">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -141,41 +167,70 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Filters and Tabs */}
         <div className="px-8 py-6 bg-gray-50/50 border-b border-gray-100 flex flex-col md:flex-row md:items-center gap-6 shrink-0">
           <div className="bg-white p-1 rounded-2xl flex border border-gray-100 shadow-sm w-fit">
-            <button 
-              onClick={() => setActiveTab('hospital')}
-              className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'hospital' ? 'bg-scopex-blue text-white shadow-lg' : 'text-gray-400 hover:text-scopex-blue'}`}
-            >
-              Inquiries
-            </button>
-            <button 
-              onClick={() => setActiveTab('camp')}
-              className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'camp' ? 'bg-scopex-blue text-white shadow-lg' : 'text-gray-400 hover:text-scopex-blue'}`}
-            >
-              Camp Bookings
-            </button>
+            <button onClick={() => setActiveTab('hospital')} className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'hospital' ? 'bg-scopex-blue text-white shadow-lg' : 'text-gray-400 hover:text-scopex-blue'}`}>Inquiries</button>
+            <button onClick={() => setActiveTab('camp')} className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'camp' ? 'bg-scopex-blue text-white shadow-lg' : 'text-gray-400 hover:text-scopex-blue'}`}>Bookings</button>
+            {user.role === 'SUPER_ADMIN' && (
+              <button onClick={() => setActiveTab('users')} className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'users' ? 'bg-scopex-blue text-white shadow-lg' : 'text-gray-400 hover:text-scopex-blue'}`}>Manage Users</button>
+            )}
           </div>
           
-          <div className="relative flex-1">
-            <input 
-              type="text" 
-              placeholder="Filter CRM records by name or mobile..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-14 pr-6 py-4 bg-white border border-gray-100 rounded-2xl focus:ring-4 focus:ring-scopex-blue/5 outline-none transition-all font-bold text-sm shadow-sm"
-            />
-            <svg className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          </div>
+          {activeTab !== 'users' && (
+            <div className="relative flex-1">
+              <input 
+                type="text" 
+                placeholder="Search CRM records..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-14 pr-6 py-4 bg-white border border-gray-100 rounded-2xl focus:ring-4 focus:ring-scopex-blue/5 outline-none transition-all font-bold text-sm shadow-sm"
+              />
+              <svg className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </div>
+          )}
         </div>
 
-        {/* Table Content */}
-        <div className="flex-1 overflow-auto custom-scrollbar p-0 bg-white">
-          {loading ? (
-            <div className="h-full flex items-center justify-center flex-col space-y-4">
-              <div className="w-12 h-12 border-4 border-scopex-blue/10 border-t-scopex-blue rounded-full animate-spin"></div>
-              <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Querying CRM Registry...</p>
+        {/* Content Area */}
+        <div className="flex-1 overflow-auto custom-scrollbar bg-white">
+          {activeTab === 'users' ? (
+            <div className="p-12 space-y-12">
+               <div className="max-w-4xl bg-gray-50 rounded-[2.5rem] p-10 border border-gray-100">
+                  <h3 className="text-xl font-black text-scopex-blue uppercase tracking-tight mb-8">Authorize New CRM User</h3>
+                  <form onSubmit={handleAddUser} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                     <input required value={newUser.fullName} onChange={e => setNewUser({...newUser, fullName: e.target.value})} className="px-5 py-4 bg-white rounded-xl border border-gray-200 outline-none text-xs font-bold" placeholder="Full Name" />
+                     <input required type="email" value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} className="px-5 py-4 bg-white rounded-xl border border-gray-200 outline-none text-xs font-bold" placeholder="Email Address" />
+                     <input required type="password" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} className="px-5 py-4 bg-white rounded-xl border border-gray-200 outline-none text-xs font-bold" placeholder="Password" />
+                     <select value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value as any})} className="px-5 py-4 bg-white rounded-xl border border-gray-200 outline-none text-xs font-bold">
+                        <option value="VIEWER">VIEWER (Read Only)</option>
+                        <option value="MANAGER">MANAGER (CRUD)</option>
+                        <option value="SUPER_ADMIN">ADMIN (Full Control)</option>
+                     </select>
+                     <button className="md:col-span-4 bg-scopex-blue text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest mt-4 hover:bg-slate-900 transition-all">Provision User Account</button>
+                  </form>
+               </div>
+
+               <div className="max-w-4xl">
+                  <h3 className="text-xl font-black text-scopex-blue uppercase tracking-tight mb-6">Existing User Registry</h3>
+                  <div className="grid gap-4">
+                    {users.map(u => (
+                      <div key={u.id} className="flex items-center justify-between p-6 bg-white border border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all">
+                        <div className="flex items-center space-x-6">
+                           <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-scopex-blue font-black">{u.fullName.charAt(0)}</div>
+                           <div>
+                              <p className="font-black text-sm text-slate-800">{u.fullName}</p>
+                              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{u.email} • <span className="text-scopex-green">{u.role}</span></p>
+                           </div>
+                        </div>
+                        {u.id !== 'root-admin' && (
+                          <button onClick={() => handleRemoveUser(u.id)} className="p-3 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all">
+                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+               </div>
             </div>
           ) : (
             <table className="w-full text-left border-collapse min-w-[1000px]">
@@ -185,111 +240,63 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Institution / Entity</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Authority</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Mobile</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Storage Status</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filteredData.length > 0 ? filteredData.map((item) => (
-                  <tr 
-                    key={item.id} 
-                    onClick={() => setSelectedLead(item)}
-                    className="hover:bg-gray-50 transition-all cursor-pointer group active:scale-[0.998]"
-                  >
+                  <tr key={item.id} onClick={() => setSelectedLead(item)} className="hover:bg-gray-50 transition-all cursor-pointer group active:scale-[0.998]">
                     <td className="px-8 py-6 text-xs font-bold text-gray-400">{item.timestamp}</td>
-                    <td className="px-8 py-6">
-                      <p className="text-sm font-black text-scopex-blue group-hover:underline underline-offset-4 decoration-2">
-                        {item.hospitalName || item.organization}
-                      </p>
-                    </td>
-                    <td className="px-8 py-6">
-                      <p className="text-sm font-bold text-slate-800">{item.contactName || item.fullName}</p>
-                    </td>
+                    <td className="px-8 py-6 font-black text-scopex-blue">{item.hospitalName || item.organization}</td>
+                    <td className="px-8 py-6 text-sm font-bold text-slate-800">{item.contactName || item.fullName}</td>
                     <td className="px-8 py-6 text-sm font-black text-slate-700">{item.mobile || item.phone}</td>
-                    <td className="px-8 py-6">
-                      <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl w-fit ${item.id.startsWith('local_') ? 'bg-orange-50 text-orange-500' : 'bg-scopex-green/10 text-scopex-green'}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${item.id.startsWith('local_') ? 'bg-orange-400 animate-pulse' : 'bg-scopex-green'}`}></span>
-                        <span className="text-[9px] font-black uppercase tracking-widest">
-                          {item.id.startsWith('local_') ? 'Cached' : 'Synced'}
-                        </span>
-                      </div>
-                    </td>
                     <td className="px-8 py-6" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        onClick={() => handleDelete(item)}
-                        className="p-2.5 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
+                      {user.role !== 'VIEWER' && (
+                        <button onClick={() => handleDelete(item)} className="p-2.5 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all opacity-0 group-hover:opacity-100">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )) : (
-                  <tr>
-                    <td colSpan={6} className="py-32 text-center">
-                       <p className="text-xs font-black text-gray-300 uppercase tracking-[0.4em]">No matching CRM records</p>
-                    </td>
-                  </tr>
+                  <tr><td colSpan={5} className="py-32 text-center text-xs font-black text-gray-300 uppercase tracking-widest">No matching records</td></tr>
                 )}
               </tbody>
             </table>
           )}
         </div>
 
-        {/* Details Overlay */}
         {selectedLead && (
           <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
             <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col border border-white/20 animate-in zoom-in duration-300">
               <div className="bg-scopex-blue p-10 text-white relative">
-                <button 
-                  onClick={() => setSelectedLead(null)}
-                  className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all"
-                >
+                <button onClick={() => setSelectedLead(null)} className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
-                <h3 className="text-3xl font-black tracking-tighter leading-tight uppercase">{selectedLead.hospitalName || selectedLead.organization}</h3>
-                <p className="text-[10px] font-black text-blue-100/60 uppercase tracking-widest mt-2">Lead Identifier: {selectedLead.id}</p>
+                <h3 className="text-3xl font-black tracking-tighter uppercase">{selectedLead.hospitalName || selectedLead.organization}</h3>
+                <p className="text-[10px] font-black text-blue-100/60 uppercase mt-2">ID: {selectedLead.id}</p>
               </div>
 
-              <div className="p-10 space-y-8 overflow-y-auto max-h-[50vh] custom-scrollbar">
-                <div className="grid grid-cols-2 gap-x-8 gap-y-8 text-left">
-                  <div>
-                    <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-1">Point of Contact</p>
-                    <p className="text-lg font-black text-slate-800 leading-tight">{selectedLead.contactName || selectedLead.fullName}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-1">Mobile Interface</p>
-                    <p className="text-lg font-black text-scopex-blue">{selectedLead.mobile || selectedLead.phone}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-1">Project Requirements</p>
-                    <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 italic text-sm text-slate-600">
-                      {selectedLead.requirements || selectedLead.interest || "No additional comments provided."}
-                    </div>
-                  </div>
+              <div className="p-10 space-y-8 overflow-y-auto max-h-[50vh] custom-scrollbar text-left">
+                <div className="grid grid-cols-2 gap-8">
+                  <div><p className="text-[10px] font-black text-gray-300 uppercase mb-1">Point of Contact</p><p className="text-lg font-black text-slate-800">{selectedLead.contactName || selectedLead.fullName}</p></div>
+                  <div><p className="text-[10px] font-black text-gray-300 uppercase mb-1">Mobile</p><p className="text-lg font-black text-scopex-blue">{selectedLead.mobile || selectedLead.phone}</p></div>
+                  <div className="col-span-2"><p className="text-[10px] font-black text-gray-300 uppercase mb-1">Requirements</p><div className="p-6 bg-gray-50 rounded-2xl border italic text-sm text-slate-600">{selectedLead.requirements || selectedLead.interest || "N/A"}</div></div>
                 </div>
               </div>
 
-              <div className="p-10 border-t border-gray-100 flex gap-4 bg-white/80">
-                <button 
-                  onClick={() => window.open(`tel:${selectedLead.mobile || selectedLead.phone}`)}
-                  className="flex-1 bg-scopex-blue text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-900/10 transition-all flex items-center justify-center space-x-2 active:scale-95"
-                >
-                  <span>Connect Now</span>
-                </button>
-                <button 
-                  onClick={() => handleDelete(selectedLead)}
-                  disabled={isDeleting}
-                  className="px-8 bg-red-50 text-red-500 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
-                >
-                  Delete
-                </button>
+              <div className="p-10 border-t flex gap-4 bg-white/80">
+                <button onClick={() => window.open(`tel:${selectedLead.mobile || selectedLead.phone}`)} className="flex-1 bg-scopex-blue text-white py-5 rounded-2xl font-black text-xs uppercase shadow-xl active:scale-95">Connect Now</button>
+                {user.role !== 'VIEWER' && (
+                  <button onClick={() => handleDelete(selectedLead)} disabled={isDeleting} className="px-8 bg-red-50 text-red-500 py-5 rounded-2xl font-black text-xs uppercase hover:bg-red-500 hover:text-white transition-all">Delete</button>
+                )}
               </div>
             </div>
           </div>
         )}
         
-        <div className="px-8 py-5 border-t border-gray-100 bg-white flex items-center justify-between">
-           <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest italic tracking-widest">Scope X CRM Administrative Console v2.6 • Registry Sync Enabled</p>
+        <div className="px-8 py-5 border-t bg-white flex items-center justify-between text-[9px] font-black text-gray-300 uppercase tracking-widest italic">
+           <p>Scope X CRM Console v2.7 • Multi-User Mode Enabled</p>
         </div>
       </div>
     </div>

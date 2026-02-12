@@ -27,11 +27,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
 
   const loadData = async () => {
     setLoading(true);
+    // Explicitly clear current data to show visual reload if needed
+    // setData([]); 
     try {
+      // Small delay to ensure the user sees the refresh happening
+      await new Promise(resolve => setTimeout(resolve, 500));
       const result = await fetchAdminData();
       setData(result);
     } catch (e) {
-      console.error("Sync failed:", e);
+      console.error("Registry Refresh Failed:", e);
     } finally {
       setLoading(false);
     }
@@ -55,14 +59,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `ScopeX_Registry_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
+    link.setAttribute("download", `ScopeX_CRM_Registry_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   const handleDelete = async (lead: any) => {
-    if (!window.confirm("Permanently remove this entry from the synchronized registry?")) return;
+    if (!window.confirm("Permanently remove this entry from the CRM registry?")) return;
     
     setIsDeleting(true);
     const success = await deleteLead(lead.id, lead.type);
@@ -90,7 +94,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-[300] bg-slate-900/40 backdrop-blur-xl flex items-center justify-center p-0 md:p-6 animate-in fade-in duration-300">
       <div className="bg-white w-full h-full md:max-w-7xl md:h-[90vh] md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden relative border border-white/20">
         
-        {/* Dashboard Header */}
+        {/* CRM Header */}
         <div className="px-8 py-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white shrink-0">
           <div className="flex items-center space-x-4">
             <div className="w-14 h-14 bg-scopex-blue rounded-2xl flex items-center justify-center shadow-lg">
@@ -99,11 +103,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
               </svg>
             </div>
             <div>
-              <h2 className="text-2xl font-black text-scopex-blue tracking-tighter uppercase leading-none mb-1">Administrative Hub</h2>
+              <h2 className="text-2xl font-black text-scopex-blue tracking-tighter uppercase leading-none mb-1">CRM Administrative Hub</h2>
               <div className="flex items-center space-x-3">
                  <span className={`flex h-2 w-2 rounded-full ${data.length > 0 ? 'bg-scopex-green' : 'bg-orange-400 animate-pulse'}`}></span>
                  <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase">
-                  Active Registry: {data.length} Total Records Found
+                  Registry Status: {data.length} Leads Synchronized
                  </span>
               </div>
             </div>
@@ -115,11 +119,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
               disabled={data.length === 0}
               className="px-6 py-4 bg-scopex-green text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-green-900/10 active:scale-95 disabled:opacity-50 disabled:grayscale"
             >
-              Export to CSV
+              Export CSV
             </button>
             <button 
               onClick={loadData}
-              className="p-4 bg-gray-50 text-scopex-blue hover:bg-scopex-blue hover:text-white rounded-2xl transition-all shadow-sm"
+              className={`p-4 bg-gray-50 text-scopex-blue hover:bg-scopex-blue hover:text-white rounded-2xl transition-all shadow-sm ${loading ? 'opacity-50 pointer-events-none' : ''}`}
               title="Refresh Registry"
             >
               <svg className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -137,14 +141,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* Filters and Storage Notification */}
+        {/* Filters */}
         <div className="px-8 py-6 bg-gray-50/50 border-b border-gray-100 flex flex-col md:flex-row md:items-center gap-6 shrink-0">
           <div className="bg-white p-1 rounded-2xl flex border border-gray-100 shadow-sm w-fit">
             <button 
               onClick={() => setActiveTab('hospital')}
               className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'hospital' ? 'bg-scopex-blue text-white shadow-lg' : 'text-gray-400 hover:text-scopex-blue'}`}
             >
-              Hospital Inquiries
+              Inquiries
             </button>
             <button 
               onClick={() => setActiveTab('camp')}
@@ -157,7 +161,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
           <div className="relative flex-1">
             <input 
               type="text" 
-              placeholder="Filter by name, mobile or institution..."
+              placeholder="Filter CRM records by name or mobile..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-14 pr-6 py-4 bg-white border border-gray-100 rounded-2xl focus:ring-4 focus:ring-scopex-blue/5 outline-none transition-all font-bold text-sm shadow-sm"
@@ -171,7 +175,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
           {loading ? (
             <div className="h-full flex items-center justify-center flex-col space-y-4">
               <div className="w-12 h-12 border-4 border-scopex-blue/10 border-t-scopex-blue rounded-full animate-spin"></div>
-              <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Querying Registry...</p>
+              <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Querying CRM Registry...</p>
             </div>
           ) : (
             <table className="w-full text-left border-collapse min-w-[1000px]">
@@ -181,12 +185,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Institution / Entity</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Authority</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Mobile</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Registry ID</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Storage Status</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {filteredData.length > 0 ? filteredData.map((item, idx) => (
+                {filteredData.length > 0 ? filteredData.map((item) => (
                   <tr 
                     key={item.id} 
                     onClick={() => setSelectedLead(item)}
@@ -206,7 +210,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                       <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl w-fit ${item.id.startsWith('local_') ? 'bg-orange-50 text-orange-500' : 'bg-scopex-green/10 text-scopex-green'}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${item.id.startsWith('local_') ? 'bg-orange-400 animate-pulse' : 'bg-scopex-green'}`}></span>
                         <span className="text-[9px] font-black uppercase tracking-widest">
-                          {item.id.startsWith('local_') ? 'Local Disk' : 'Cloud Host'}
+                          {item.id.startsWith('local_') ? 'Cached' : 'Synced'}
                         </span>
                       </div>
                     </td>
@@ -222,7 +226,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                 )) : (
                   <tr>
                     <td colSpan={6} className="py-32 text-center">
-                       <p className="text-xs font-black text-gray-300 uppercase tracking-[0.4em]">No Records in this Filter</p>
+                       <p className="text-xs font-black text-gray-300 uppercase tracking-[0.4em]">No matching CRM records</p>
                     </td>
                   </tr>
                 )}
@@ -243,7 +247,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
                 <h3 className="text-3xl font-black tracking-tighter leading-tight uppercase">{selectedLead.hospitalName || selectedLead.organization}</h3>
-                <p className="text-[10px] font-black text-blue-100/60 uppercase tracking-widest mt-2">Registration ID: {selectedLead.id}</p>
+                <p className="text-[10px] font-black text-blue-100/60 uppercase tracking-widest mt-2">Lead Identifier: {selectedLead.id}</p>
               </div>
 
               <div className="p-10 space-y-8 overflow-y-auto max-h-[50vh] custom-scrollbar">
@@ -257,7 +261,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                     <p className="text-lg font-black text-scopex-blue">{selectedLead.mobile || selectedLead.phone}</p>
                   </div>
                   <div className="col-span-2">
-                    <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-1">Details / Requirements</p>
+                    <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-1">Project Requirements</p>
                     <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 italic text-sm text-slate-600">
                       {selectedLead.requirements || selectedLead.interest || "No additional comments provided."}
                     </div>
@@ -285,8 +289,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
         )}
         
         <div className="px-8 py-5 border-t border-gray-100 bg-white flex items-center justify-between">
-           <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest italic">Browser Local Storage is active as primary cache.</p>
-           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Scope X Administrative Console v2.5</p>
+           <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest italic tracking-widest">Scope X CRM Administrative Console v2.6 • Registry Sync Enabled</p>
         </div>
       </div>
     </div>

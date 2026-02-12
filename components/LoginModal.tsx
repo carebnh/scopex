@@ -34,8 +34,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h3 className="text-2xl font-black text-white tracking-tight uppercase">Management Login</h3>
-          <p className="text-blue-100/60 text-[10px] font-black tracking-widest uppercase mt-2">Partner Intelligence Portal Access</p>
+          <h3 className="text-2xl font-black text-white tracking-tight uppercase">CRM Management Login</h3>
+          <p className="text-blue-100/60 text-[10px] font-black tracking-widest uppercase mt-2">Administrative Registry Access</p>
         </div>
         
         <form onSubmit={handleSubmit} className="p-10 space-y-5">
@@ -69,7 +69,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
           </div>
 
           <button className="w-full bg-scopex-blue text-white py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl active:scale-[0.98] transition-all mt-4">
-            Unlock Dashboard
+            Unlock CRM Panel
           </button>
           
           <div className="pt-4 text-center">

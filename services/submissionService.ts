@@ -9,7 +9,8 @@ import {
   doc, 
   query, 
   orderBy, 
-  serverTimestamp 
+  serverTimestamp,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -41,21 +42,27 @@ const STORAGE_KEYS = {
 const getLocalData = (key: string) => JSON.parse(localStorage.getItem(key) || '[]');
 const saveLocalData = (key: string, data: any) => localStorage.setItem(key, JSON.stringify(data));
 
+const notifyNewLead = (lead: any) => {
+  window.dispatchEvent(new CustomEvent('scopex-new-lead', { detail: lead }));
+};
+
 export const submitHospitalEnquiry = async (data: any): Promise<boolean> => {
   const timestamp = new Date().toLocaleString();
   const localId = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-  const record = { ...data, id: localId, type: 'hospital', timestamp };
+  const record = { ...data, id: localId, type: 'hospital', timestamp, status: 'NEW', adminNotes: '' };
   
-  // 1. Primary Save: Local Storage (Immediate & Guaranteed)
   const local = getLocalData(STORAGE_KEYS.HOSPITAL);
   saveLocalData(STORAGE_KEYS.HOSPITAL, [record, ...local]);
 
-  // 2. Secondary Save: Cloud (Optional)
+  notifyNewLead(record);
+
   if (db) {
     try {
       await addDoc(collection(db, "hospital_leads"), { 
         ...data, 
         type: 'hospital', 
+        status: 'NEW',
+        adminNotes: '',
         createdAt: serverTimestamp(),
         timestamp
       });
@@ -69,21 +76,46 @@ export const submitHospitalEnquiry = async (data: any): Promise<boolean> => {
 export const submitCampBooking = async (data: any): Promise<boolean> => {
   const timestamp = new Date().toLocaleString();
   const localId = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-  const record = { ...data, id: localId, type: 'camp', timestamp };
+  const record = { ...data, id: localId, type: 'camp', timestamp, status: 'NEW', adminNotes: '' };
 
   const local = getLocalData(STORAGE_KEYS.CAMP);
   saveLocalData(STORAGE_KEYS.CAMP, [record, ...local]);
+
+  notifyNewLead(record);
 
   if (db) {
     try {
       await addDoc(collection(db, "camp_bookings"), { 
         ...data, 
         type: 'camp', 
+        status: 'NEW',
+        adminNotes: '',
         createdAt: serverTimestamp(),
         timestamp 
       });
     } catch (error) {
       console.error('Cloud Sync Failed:', error);
+    }
+  }
+  return true;
+};
+
+export const updateLead = async (id: string, type: 'hospital' | 'camp', updates: any): Promise<boolean> => {
+  const key = type === 'hospital' ? STORAGE_KEYS.HOSPITAL : STORAGE_KEYS.CAMP;
+  const local = getLocalData(key);
+  const updatedLocal = local.map((item: any) => 
+    item.id === id ? { ...item, ...updates } : item
+  );
+  saveLocalData(key, updatedLocal);
+
+  if (db && !id.startsWith('local_')) {
+    try {
+      const collectionName = type === 'hospital' ? 'hospital_leads' : 'camp_bookings';
+      const leadRef = doc(db, collectionName, id);
+      await updateDoc(leadRef, updates);
+    } catch (error) {
+      console.error('Cloud Update Failed:', error);
+      return false;
     }
   }
   return true;
@@ -109,12 +141,10 @@ export const fetchAdminData = async (): Promise<any[]> => {
   const localH = getLocalData(STORAGE_KEYS.HOSPITAL);
   const localC = getLocalData(STORAGE_KEYS.CAMP);
   
-  // Merge and prioritize by timestamp
   const merged = [...cloudData, ...localH, ...localC].sort((a, b) => {
     return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
   });
 
-  // Strict deduplication by ID
   const seen = new Set();
   return merged.filter(item => {
     const isDuplicate = seen.has(item.id);

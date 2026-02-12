@@ -10,6 +10,7 @@ export interface CRMUser {
 }
 
 const STORAGE_KEY = 'scopex_crm_users';
+const SESSION_KEY = 'scopex_crm_session';
 
 const DEFAULT_USERS: CRMUser[] = [
   {
@@ -67,4 +68,32 @@ export const validateLogin = (email: string, pass: string): CRMUser | null => {
   const normalizedEmail = email.toLowerCase().trim();
   const found = users.find(u => u.email.toLowerCase() === normalizedEmail && u.password === pass);
   return found || null;
+};
+
+/**
+ * Persists the current user session
+ */
+export const setSession = (user: CRMUser | null) => {
+  if (user) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(SESSION_KEY);
+  }
+};
+
+/**
+ * Retrieves the persisted user session
+ */
+export const getSession = (): CRMUser | null => {
+  const session = localStorage.getItem(SESSION_KEY);
+  if (!session) return null;
+  try {
+    const user = JSON.parse(session) as CRMUser;
+    // Optional: Re-validate against the current user list to ensure credentials/roles are still valid
+    const all = getAllUsers();
+    const stillExists = all.find(u => u.id === user.id && u.password === user.password);
+    return stillExists || null;
+  } catch {
+    return null;
+  }
 };

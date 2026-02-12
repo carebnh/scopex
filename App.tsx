@@ -1,5 +1,4 @@
-
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Header from './components/Header.tsx';
 import Hero from './components/Hero.tsx';
 import ServiceModels from './components/ServiceModels.tsx';
@@ -13,7 +12,7 @@ import EnquiryModal from './components/EnquiryModal.tsx';
 import HealthCampPromo from './components/HealthCampPromo.tsx';
 import LoginModal from './components/LoginModal.tsx';
 import AdminDashboard from './components/AdminDashboard.tsx';
-import { CRMUser } from './services/userService.ts';
+import { CRMUser, getSession, setSession } from './services/userService.ts';
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,6 +20,15 @@ function App() {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<CRMUser | null>(null);
   const advisorRef = useRef<AdvisorChatHandle>(null);
+
+  // Auto-login logic: check for existing session on app load
+  useEffect(() => {
+    const persistedUser = getSession();
+    if (persistedUser) {
+      setCurrentUser(persistedUser);
+      setIsAdminOpen(true);
+    }
+  }, []);
 
   const openEnquiry = () => setIsModalOpen(true);
   
@@ -32,12 +40,14 @@ function App() {
 
   const handleAdminSuccess = (user: CRMUser) => {
     setCurrentUser(user);
+    setSession(user); // Save session for future visits
     setIsLoginModalOpen(false);
     setIsAdminOpen(true);
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
+    setSession(null); // Clear session
     setIsAdminOpen(false);
   };
 
@@ -89,6 +99,7 @@ function App() {
           </div>
         </section>
 
+        {/* Fixed typos 'openEnquire' to 'openEnquiry' */}
         <ServiceModels onEnquire={openEnquiry} />
         <Expertise onEnquire={openEnquiry} />
         <CorporateCheckups onAskAdvisor={handleAdvisorQuery} />

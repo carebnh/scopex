@@ -14,9 +14,7 @@ import {
 
 /**
  * FIREBASE CONFIGURATION
- * 1. Go to Firebase Console (console.firebase.google.com)
- * 2. Create a project "Scope X Diagnostics"
- * 3. Add a Web App and copy the config below
+ * Replace these values with your actual config from Firebase Console.
  */
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
@@ -27,80 +25,103 @@ const firebaseConfig = {
   appId: "YOUR_APP_ID"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Check if Firebase is configured
+const isFirebaseConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY";
+
+let db: any = null;
+if (isFirebaseConfigured) {
+  try {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+  } catch (e) {
+    console.warn("Firebase initialization failed, falling back to LocalStorage.");
+  }
+}
+
+// Local Storage Helpers
+const getLocalData = (key: string) => JSON.parse(localStorage.getItem(key) || '[]');
+const saveLocalData = (key: string, data: any) => localStorage.setItem(key, JSON.stringify(data));
 
 export const submitHospitalEnquiry = async (data: any): Promise<boolean> => {
-  try {
-    await addDoc(collection(db, "hospital_leads"), {
-      ...data,
-      type: 'hospital',
-      createdAt: serverTimestamp()
-    });
-    return true;
-  } catch (error) {
-    console.error('Firebase Submission failed:', error);
-    return false;
+  const record = { ...data, id: 'local_' + Date.now(), type: 'hospital', timestamp: new Date().toLocaleString() };
+  
+  if (db) {
+    try {
+      await addDoc(collection(db, "hospital_leads"), { ...data, type: 'hospital', createdAt: serverTimestamp() });
+      return true;
+    } catch (error) {
+      console.error('Firebase Error:', error);
+    }
   }
+
+  // Fallback to LocalStorage
+  const local = getLocalData('sx_hospital_leads');
+  saveLocalData('sx_hospital_leads', [record, ...local]);
+  return true;
 };
 
 export const submitCampBooking = async (data: any): Promise<boolean> => {
-  try {
-    await addDoc(collection(db, "camp_bookings"), {
-      ...data,
-      type: 'camp',
-      createdAt: serverTimestamp()
-    });
-    return true;
-  } catch (error) {
-    console.error('Firebase Submission failed:', error);
-    return false;
+  const record = { ...data, id: 'local_' + Date.now(), type: 'camp', timestamp: new Date().toLocaleString() };
+
+  if (db) {
+    try {
+      await addDoc(collection(db, "camp_bookings"), { ...data, type: 'camp', createdAt: serverTimestamp() });
+      return true;
+    } catch (error) {
+      console.error('Firebase Error:', error);
+    }
   }
+
+  // Fallback to LocalStorage
+  const local = getLocalData('sx_camp_bookings');
+  saveLocalData('sx_camp_bookings', [record, ...local]);
+  return true;
 };
 
 export const fetchAdminData = async (): Promise<any[]> => {
-  try {
-    const hospitalQuery = query(collection(db, "hospital_leads"), orderBy("createdAt", "desc"));
-    const campQuery = query(collection(db, "camp_bookings"), orderBy("createdAt", "desc"));
+  let cloudData: any[] = [];
 
-    const [hospitalSnap, campSnap] = await Promise.all([
-      getDocs(hospitalQuery),
-      getDocs(campQuery)
-    ]);
-
-    const hospitalLeads = hospitalSnap.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      // Format timestamp for display if it's a Firestore Timestamp
-      timestamp: doc.data().createdAt?.toDate().toLocaleString() || doc.data().timestamp
-    }));
-
-    const campBookings = campSnap.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      timestamp: doc.data().createdAt?.toDate().toLocaleString() || doc.data().timestamp
-    }));
-
-    return [...hospitalLeads, ...campBookings].sort((a, b) => {
-      const dateA = new Date(a.timestamp).getTime();
-      const dateB = new Date(b.timestamp).getTime();
-      return dateB - dateA;
-    });
-  } catch (error) {
-    console.error('Firebase Fetch failed:', error);
-    // Return empty or mock if config is missing
-    return [];
+  if (db) {
+    try {
+      const hSnap = await getDocs(query(collection(db, "hospital_leads"), orderBy("createdAt", "desc")));
+      const cSnap = await getDocs(query(collection(db, "camp_bookings"), orderBy("createdAt", "desc")));
+      
+      cloudData = [
+        ...hSnap.docs.map(d => ({ id: d.id, ...d.data(), timestamp: d.data().createdAt?.toDate().toLocaleString() || d.data().timestamp })),
+        ...cSnap.docs.map(d => ({ id: d.id, ...d.data(), timestamp: d.data().createdAt?.toDate().toLocaleString() || d.data().timestamp }))
+      ];
+    } catch (error) {
+      console.warn("Cloud fetch failed, using local records only.");
+    }
   }
+
+  const localH = getLocalData('sx_hospital_leads');
+  const localC = getLocalData('sx_camp_bookings');
+  
+  const merged = [...cloudData, ...localH, ...localC].sort((a, b) => {
+    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+  });
+
+  return merged;
 };
 
 export const deleteLead = async (id: string, type: 'hospital' | 'camp'): Promise<boolean> => {
-  try {
-    const collectionName = type === 'hospital' ? 'hospital_leads' : 'camp_bookings';
-    await deleteDoc(doc(db, collectionName, id));
+  if (id.startsWith('local_')) {
+    const key = type === 'hospital' ? 'sx_hospital_leads' : 'sx_camp_bookings';
+    const filtered = getLocalData(key).filter((item: any) => item.id !== id);
+    saveLocalData(key, filtered);
     return true;
-  } catch (error) {
-    console.error('Firebase Delete failed:', error);
-    return false;
   }
+
+  if (db) {
+    try {
+      const collectionName = type === 'hospital' ? 'hospital_leads' : 'camp_bookings';
+      await deleteDoc(doc(db, collectionName, id));
+      return true;
+    } catch (error) {
+      console.error('Delete failed:', error);
+      return false;
+    }
+  }
+  return false;
 };

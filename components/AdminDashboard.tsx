@@ -27,22 +27,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
 
   const loadData = async () => {
     setLoading(true);
-    const result = await fetchAdminData();
-    setData(result);
-    setLoading(false);
+    try {
+      const result = await fetchAdminData();
+      setData(result);
+    } catch (e) {
+      console.error("Dashboard failed to load data:", e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = async (lead: any) => {
     if (!window.confirm("Are you absolutely sure you want to permanently delete this record?")) return;
     
     setIsDeleting(true);
-    // In Firebase, we use the document 'id'
     const success = await deleteLead(lead.id, lead.type);
     if (success) {
       setData(prev => prev.filter(item => item.id !== lead.id));
       setSelectedLead(null);
     } else {
-      alert("Failed to delete record. Check Firebase rules and configuration.");
+      alert("Failed to delete record. Please check your credentials.");
     }
     setIsDeleting(false);
   };
@@ -78,10 +82,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
               </svg>
             </div>
             <div>
-              <h2 className="text-2xl font-black text-scopex-blue tracking-tighter uppercase leading-none mb-1">Firebase Console</h2>
+              <h2 className="text-2xl font-black text-scopex-blue tracking-tighter uppercase leading-none mb-1">Administrative Hub</h2>
               <div className="flex items-center space-x-3">
                  <span className="flex h-2 w-2 rounded-full bg-scopex-green"></span>
-                 <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase">Live Firestore Stream</span>
+                 <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase">Hybrid Registry Synchronized</span>
               </div>
             </div>
           </div>
@@ -107,7 +111,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* Search & Tabs */}
+        {/* Filters */}
         <div className="p-8 bg-gray-50/50 border-b border-gray-100 space-y-4 shrink-0">
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <div className="bg-white p-1 rounded-2xl flex border border-gray-100 shadow-sm">
@@ -128,7 +132,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
             <div className="relative flex-1">
               <input 
                 type="text" 
-                placeholder="Search leads..."
+                placeholder="Search synchronized records..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-14 pr-6 py-4 bg-white border border-gray-100 rounded-2xl focus:ring-4 focus:ring-scopex-blue/5 outline-none transition-all font-bold text-sm shadow-sm"
@@ -138,22 +142,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* Registry Table */}
+        {/* Table */}
         <div className="flex-1 overflow-auto custom-scrollbar p-0 bg-white">
           {loading ? (
             <div className="h-full flex items-center justify-center flex-col space-y-4">
               <div className="w-12 h-12 border-4 border-scopex-blue/10 border-t-scopex-blue rounded-full animate-spin"></div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Querying Firestore...</p>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Accessing Registry Database...</p>
             </div>
           ) : (
             <table className="w-full text-left border-collapse min-w-[1000px]">
               <thead className="sticky top-0 bg-white z-10 shadow-sm">
                 <tr className="border-b border-gray-100">
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Timestamp</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">{activeTab === 'hospital' ? 'Hospital' : 'Organization'}</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Entry Date</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Source / Institution</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Primary Contact</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Phone</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">{activeTab === 'hospital' ? 'Interest' : 'Date'}</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Mobile</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Storage Type</th>
                   <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Action</th>
                 </tr>
               </thead>
@@ -167,15 +171,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                     <td className="px-8 py-6 text-xs font-bold text-gray-400">{item.timestamp}</td>
                     <td className="px-8 py-6">
                       <p className="text-sm font-black text-scopex-blue group-hover:underline underline-offset-4 decoration-2">{item.hospitalName || item.organization}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-0.5">{item.type === 'camp' ? 'Corporate' : 'Healthcare'}</p>
                     </td>
                     <td className="px-8 py-6">
                       <p className="text-sm font-bold text-slate-800">{item.contactName || item.fullName}</p>
                     </td>
                     <td className="px-8 py-6 text-sm font-black text-slate-700">{item.mobile || item.phone}</td>
                     <td className="px-8 py-6">
-                      <span className="px-3 py-1 bg-gray-100 rounded-lg text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                        {item.interest || item.date}
+                      <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${item.id.includes('local_') ? 'bg-orange-50 text-orange-500' : 'bg-scopex-green/10 text-scopex-green'}`}>
+                        {item.id.includes('local_') ? 'Local Cache' : 'Cloud Firestore'}
                       </span>
                     </td>
                     <td className="px-8 py-6" onClick={(e) => e.stopPropagation()}>
@@ -197,7 +200,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={6} className="py-20 text-center text-gray-300 font-black uppercase tracking-[0.2em]">No Records in Cloud</td>
+                    <td colSpan={6} className="py-20 text-center text-gray-300 font-black uppercase tracking-[0.2em] italic">Waiting for synchronized records...</td>
                   </tr>
                 )}
               </tbody>
@@ -205,7 +208,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
           )}
         </div>
 
-        {/* Lead Detail Overlay */}
+        {/* Detail Modal */}
         {selectedLead && (
           <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
             <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col border border-white/20 animate-in zoom-in duration-300">
@@ -216,30 +219,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                 >
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
-                <h3 className="text-3xl font-black tracking-tighter leading-tight">{selectedLead.hospitalName || selectedLead.organization}</h3>
-                <p className="text-[10px] font-black text-blue-100/60 uppercase tracking-widest mt-2">Firestore Document ID: {selectedLead.id}</p>
+                <h3 className="text-3xl font-black tracking-tighter leading-tight uppercase">{selectedLead.hospitalName || selectedLead.organization}</h3>
+                <p className="text-[10px] font-black text-blue-100/60 uppercase tracking-widest mt-2">Registry Reference: {selectedLead.id}</p>
               </div>
 
               <div className="p-10 space-y-8 overflow-y-auto max-h-[50vh] custom-scrollbar">
                 <div className="grid grid-cols-2 gap-x-8 gap-y-6">
                   <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Contact Authority</p>
                     <p className="text-lg font-black text-slate-800">{selectedLead.contactName || selectedLead.fullName}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mobile</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Mobile Interface</p>
                     <p className="text-lg font-black text-scopex-blue">{selectedLead.mobile || selectedLead.phone}</p>
                   </div>
                   {selectedLead.email && (
                     <div className="col-span-2">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email</p>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Verified Email</p>
                       <p className="text-sm font-bold text-slate-800">{selectedLead.email}</p>
                     </div>
                   )}
                   {selectedLead.requirements && (
-                    <div className="col-span-2 p-6 bg-gray-50 rounded-2xl border border-gray-100">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Requirements</p>
-                      <p className="text-sm text-slate-600 font-medium italic">"{selectedLead.requirements}"</p>
+                    <div className="col-span-2 p-8 bg-gray-50 rounded-[2rem] border border-gray-100">
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Technical Requirements</p>
+                      <p className="text-sm text-slate-600 font-semibold italic leading-relaxed">"{selectedLead.requirements}"</p>
                     </div>
                   )}
                 </div>
@@ -258,13 +261,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
                   disabled={isDeleting}
                   className="px-8 bg-red-50 text-red-500 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
                 >
-                  Delete Record
+                  Delete Entry
                 </button>
               </div>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
